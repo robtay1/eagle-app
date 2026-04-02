@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THE EAGLE HAS LANDED</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<style>
+body {margin:0;background:#111;color:white;font-family:-apple-system;}
+#map {height:60vh;}
+button {width:100%;padding:15px;margin:5px;background:#0b3d2e;color:white;border:none;border-radius:10px;}
+.score {font-size:40px;text-align:center;}
+</style>
+</head>
+<body>
+<h2 style="text-align:center;">🦅 THE EAGLE HAS LANDED</h2>
+<div id="map"></div>
+<div class="score" id="score">0</div>
+<button onclick="addShot()">+ Shot</button>
+<button onclick="removeShot()">- Shot</button>
+<script>
+let map = L.map('map').setView([51.5,-0.1],15);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
+navigator.geolocation.getCurrentPosition(pos=>{
+  let lat=pos.coords.latitude;
+  let lng=pos.coords.longitude;
+  L.marker([lat,lng]).addTo(map);
+  map.setView([lat,lng],16);
+});
+function addShot(){
+  let s=document.getElementById("score");
+  s.innerText = Number(s.innerText)+1;
+}
+function removeShot(){
+  let s=document.getElementById("score");
+  if(s.innerText>0) s.innerText--;
+}
+</script>
+</body>
+</html>
