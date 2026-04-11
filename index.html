@@ -9,7 +9,7 @@
 
 <style>
 body {margin:0;background:black;color:white;font-family:-apple-system;text-align:center;}
-#map {height:50vh;width:100%;}
+#map {height:55vh;width:100%;}
 .info {font-size:18px;margin:6px;}
 button {width:90%;padding:12px;margin:6px;border:none;border-radius:10px;background:#00c853;color:black;font-size:16px;}
 </style>
@@ -24,7 +24,7 @@ button {width:90%;padding:12px;margin:6px;border:none;border-radius:10px;backgro
 <div class="info" id="distance">Distance: --</div>
 <div class="info" id="club">Club: --</div>
 
-<button onclick="startHole()">Start Hole</button>
+<button onclick="startHole()">🏁 Start Hole</button>
 <button onclick="addShot()">+ Shot</button>
 
 <script>
@@ -35,13 +35,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19
 }).addTo(map);
 
-  map.on('click', function(e) {
-  targetLat = e.latlng.lat;
-  targetLng = e.latlng.lng;
-
-  targetMarker.setLatLng([targetLat, targetLng]);
-  updateDistance();
-});// VARIABLES
+// VARIABLES
 let userLat = 51.505;
 let userLng = -0.09;
 
@@ -49,8 +43,9 @@ let targetLat = 51.506;
 let targetLng = -0.091;
 
 let shots = [];
-let shots = null;
-  // MARKERS
+let shotLine = null;
+
+// MARKERS (ONLY ONE OF EACH)
 var userMarker = L.marker([userLat, userLng]).addTo(map);
 var targetMarker = L.marker([targetLat, targetLng]).addTo(map);
 
@@ -58,17 +53,19 @@ var targetMarker = L.marker([targetLat, targetLng]).addTo(map);
 function startHole(){
   shots = [];
 
+  if (shotLine) {
+    map.removeLayer(shotLine);
+    shotLine = null;
+  }
+
   targetLat = userLat + 0.0008;
   targetLng = userLng;
 
   targetMarker.setLatLng([targetLat, targetLng]);
 
-  if (shotLine) {
-    map.removeLayer(shotLine);
-  }
-
   updateDistance();
 }
+
 // ADD SHOT
 function addShot(){
   shots.push([userLat, userLng]);
@@ -77,8 +74,18 @@ function addShot(){
     map.removeLayer(shotLine);
   }
 
-  shotLine = L.polyline(shots, {color: 'yellow'}).addTo(map);
+  shotLine = L.polyline(shots, {color:'yellow'}).addTo(map);
 }
+
+// TAP TO SET HOLE
+map.on('click', function(e) {
+  targetLat = e.latlng.lat;
+  targetLng = e.latlng.lng;
+
+  targetMarker.setLatLng([targetLat, targetLng]);
+  updateDistance();
+});
+
 // DISTANCE
 function getDistance(lat1, lon1, lat2, lon2){
   const R = 6371e3;
@@ -111,17 +118,26 @@ function updateDistance(){
     "Club: " + club;
 }
 
-// GPS
-navigator.geolocation.watchPosition(function(pos){
-  userLat = pos.coords.latitude;
-  userLng = pos.coords.longitude;
+// LIVE GPS (FIXED)
+navigator.geolocation.watchPosition(
+  function(pos){
+    userLat = pos.coords.latitude;
+    userLng = pos.coords.longitude;
 
-  userMarker.setLatLng([userLat, userLng]);
-  map.setView([userLat, userLng], 15);
+    userMarker.setLatLng([userLat, userLng]);
 
-  updateDistance();
-});
+    updateDistance();
+  },
+  function(err){
+    console.log(err);
+  },
+  {
+    enableHighAccuracy: true,
+    maximumAge: 0
+  }
+);
 
+// INITIAL
 updateDistance();
 </script>
 
