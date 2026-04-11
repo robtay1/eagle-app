@@ -97,17 +97,15 @@ function updateDistance(){
 }
 
 // GPS
-navigator.geolocation.getCurrentPosition(function(pos){
+navigator.geolocation.watchPosition(function(pos){
   userLat = pos.coords.latitude;
   userLng = pos.coords.longitude;
 
   userMarker.setLatLng([userLat, userLng]);
-  map.setView([userLat, userLng], 15);
+  map.setView([userLat, userLng]);
 
   updateDistance();
 });
-
-updateDistance();
 </script>
 
 </body>
