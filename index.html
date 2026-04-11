@@ -9,9 +9,8 @@
 
 <style>
 body {margin:0;background:black;color:white;font-family:-apple-system;text-align:center;}
-#map {height:55vh;width:100%;}
+#map {height:50vh;width:100%;}
 .info {font-size:18px;margin:6px;}
-#score {font-size:30px;margin:8px;}
 button {width:90%;padding:12px;margin:6px;border:none;border-radius:10px;background:#00c853;color:black;font-size:16px;}
 </style>
 </head>
@@ -24,9 +23,8 @@ button {width:90%;padding:12px;margin:6px;border:none;border-radius:10px;backgro
 
 <div class="info" id="distance">Distance: --</div>
 <div class="info" id="club">Club: --</div>
-<div id="score">Shots: 0</div>
 
-<button onclick="startHole()">🏁 Start Hole</button>
+<button onclick="startHole()">Start Hole</button>
 <button onclick="addShot()">+ Shot</button>
 
 <script>
@@ -37,6 +35,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19
 }).addTo(map);
 
+// VARIABLES
 let userLat = 51.505;
 let userLng = -0.09;
 
@@ -45,36 +44,22 @@ let targetLng = -0.091;
 
 let shots = [];
 
-// markers
+// MARKERS
 var userMarker = L.marker([userLat, userLng]).addTo(map);
 var targetMarker = L.marker([targetLat, targetLng]).addTo(map);
 
 // START HOLE
 function startHole(){
-  shots = [];
-
-  // set tee to current position
-  let teeLat = userLat;
-  let teeLng = userLng;
-
-  // place green ~100m ahead (simple demo logic)
-  targetLat = teeLat + 0.0009;
-  targetLng = teeLng;
+  targetLat = userLat + 0.0008;
+  targetLng = userLng;
 
   targetMarker.setLatLng([targetLat, targetLng]);
-
   updateDistance();
 }
 
 // ADD SHOT
 function addShot(){
   shots.push([userLat, userLng]);
-
-  // draw shot line
-  L.polyline(shots, {color:'yellow'}).addTo(map);
-
-  document.getElementById("score").innerText =
-    "Shots: " + shots.length;
 }
 
 // DISTANCE
@@ -94,7 +79,7 @@ function getDistance(lat1, lon1, lat2, lon2){
   return R*c;
 }
 
-// UPDATE
+// UPDATE DISTANCE
 function updateDistance(){
   let d = getDistance(userLat, userLng, targetLat, targetLng);
 
@@ -109,7 +94,7 @@ function updateDistance(){
     "Club: " + club;
 }
 
-// GPS LIVE
+// GPS
 navigator.geolocation.watchPosition(function(pos){
   userLat = pos.coords.latitude;
   userLng = pos.coords.longitude;
