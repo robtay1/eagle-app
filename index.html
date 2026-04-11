@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-  <!- test ->
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Eagle AI Caddie</title>
@@ -9,43 +8,11 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
-body {
-  margin:0;
-  background:black;
-  color:white;
-  font-family:-apple-system;
-  text-align:center;
-}
-
-h2 {
-  padding:10px;
-}
-
-#map {
-  height:60vh;
-  width:100%;
-}
-
-.info {
-  font-size:20px;
-  margin:8px;
-}
-
-#score {
-  font-size:40px;
-  margin:10px;
-}
-
-button {
-  width:90%;
-  padding:15px;
-  margin:8px;
-  border:none;
-  border-radius:10px;
-  background:limegreen;
-  color:black;
-  font-size:18px;
-}
+body {margin:0;background:black;color:white;font-family:-apple-system;text-align:center;}
+#map {height:60vh;width:100%;}
+.info {font-size:20px;margin:8px;}
+#score {font-size:40px;margin:10px;}
+button {width:90%;padding:15px;margin:8px;border:none;border-radius:10px;background:#4CAF50;color:white;font-size:18px;}
 </style>
 </head>
 
@@ -63,78 +30,84 @@ button {
 <button onclick="removeShot()">- Shot</button>
 
 <script>
-// --- MAP ---
+let score = 0;
+
+function addShot(){
+  score++;
+  document.getElementById("score").innerText = "Score: " + score;
+}
+
+function removeShot(){
+  score--;
+  document.getElementById("score").innerText = "Score: " + score;
+}
+
+// MAP
 var map = L.map('map').setView([51.505, -0.09], 15);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19
 }).addTo(map);
 
-var marker = L.marker([51.505, -0.09]).addTo(map);
+let userLat = 51.505;
+let userLng = -0.09;
 
-// --- SCORE ---
-let score = 0;
+let targetLat = 51.506;
+let targetLng = -0.091;
 
-function addShot() {
-  score++;
-  document.getElementById("score").innerText = "Score: " + score;
-}
-
-function removeShot() {
-  score--;
-  document.getElementById("score").innerText = "Score: " + score;
-}
-
-// --- GPS DISTANCE ---
-if (navigator.geolocation) {
-  navigator.geolocation.watchPosition(function(position) {
-    let lat = position.coords.latitude;
-    let lng = position.coords.longitude;
-
-    marker.setLatLng([lat, lng]);
-    map.setView([lat, lng]);
-
-    let targetLat = 51.505;
-let targetLng = -0.09;
-
-// target marker (the hole)
+var userMarker = L.marker([userLat, userLng]).addTo(map);
 var targetMarker = L.marker([targetLat, targetLng]).addTo(map);
 
-// when you tap map → set new hole
+// CLICK TO MOVE TARGET
 map.on('click', function(e) {
   targetLat = e.latlng.lat;
   targetLng = e.latlng.lng;
 
   targetMarker.setLatLng([targetLat, targetLng]);
+  updateDistance();
 });
-    let distance = getDistance(lat, lng, targetLat, targetLng);
-    document.getElementById("distance").innerText = "Distance: " + Math.round(distance) + " m";
 
-    // simple club suggestion
-    let club = "Driver";
-    if (distance < 150) club = "Iron";
-    if (distance < 50) club = "Wedge";
-
-    document.getElementById("club").innerText = "Club: " + club;
-  });
-}
-
-// --- DISTANCE CALC ---
+// DISTANCE
 function getDistance(lat1, lon1, lat2, lon2) {
-  let R = 6371000;
-  let dLat = (lat2-lat1) * Math.PI/180;
-  let dLon = (lon2-lon1) * Math.PI/180;
+  const R = 6371e3;
+  const φ1 = lat1 * Math.PI/180;
+  const φ2 = lat2 * Math.PI/180;
+  const Δφ = (lat2-lat1) * Math.PI/180;
+  const Δλ = (lon2-lon1) * Math.PI/180;
 
-  let a =
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI/180) *
-    Math.cos(lat2 * Math.PI/180) *
-    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const a =
+    Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+    Math.cos(φ1) * Math.cos(φ2) *
+    Math.sin(Δλ/2) * Math.sin(Δλ/2);
 
-  let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
   return R * c;
 }
+
+function updateDistance(){
+  let d = getDistance(userLat, userLng, targetLat, targetLng);
+  document.getElementById("distance").innerText = "Distance: " + Math.round(d) + " m";
+
+  let club = "Driver";
+  if(d < 150) club = "Wedge";
+  else if(d < 200) club = "Iron";
+
+  document.getElementById("club").innerText = "Club: " + club;
+}
+
+// GPS
+navigator.geolocation.getCurrentPosition(function(pos){
+  userLat = pos.coords.latitude;
+  userLng = pos.coords.longitude;
+
+  userMarker.setLatLng([userLat, userLng]);
+  map.setView([userLat, userLng], 15);
+
+  updateDistance();
+});
+
+updateDistance();
 </script>
 
 </body>
