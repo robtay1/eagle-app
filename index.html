@@ -35,7 +35,13 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19
 }).addTo(map);
 
-// VARIABLES
+  map.on('click', function(e) {
+  targetLat = e.latlng.lat;
+  targetLng = e.latlng.lng;
+
+  targetMarker.setLatLng([targetLat, targetLng]);
+  updateDistance();
+});// VARIABLES
 let userLat = 51.505;
 let userLng = -0.09;
 
@@ -43,25 +49,36 @@ let targetLat = 51.506;
 let targetLng = -0.091;
 
 let shots = [];
-
-// MARKERS
+let shots = null;
+  // MARKERS
 var userMarker = L.marker([userLat, userLng]).addTo(map);
 var targetMarker = L.marker([targetLat, targetLng]).addTo(map);
 
 // START HOLE
 function startHole(){
+  shots = [];
+
   targetLat = userLat + 0.0008;
   targetLng = userLng;
 
   targetMarker.setLatLng([targetLat, targetLng]);
+
+  if (shotLine) {
+    map.removeLayer(shotLine);
+  }
+
   updateDistance();
 }
-
 // ADD SHOT
 function addShot(){
   shots.push([userLat, userLng]);
-}
 
+  if (shotLine) {
+    map.removeLayer(shotLine);
+  }
+
+  shotLine = L.polyline(shots, {color: 'yellow'}).addTo(map);
+}
 // DISTANCE
 function getDistance(lat1, lon1, lat2, lon2){
   const R = 6371e3;
