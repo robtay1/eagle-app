@@ -55,9 +55,22 @@ let userLng = -0.09;
 let targetLat = 51.506;
 let targetLng = -0.091;
 
-var userMarker = L.marker([userLat, userLng]).addTo(map);
+// DEFAULT TARGET (will move when you tap)
+let targetLat = userLat + 0.0005;
+let targetLng = userLng + 0.0005;
+
+// visible hole marker
 var targetMarker = L.marker([targetLat, targetLng]).addTo(map);
 
+// TAP MAP = SET HOLE
+map.on('click', function(e) {
+  targetLat = e.latlng.lat;
+  targetLng = e.latlng.lng;
+
+  targetMarker.setLatLng([targetLat, targetLng]);
+
+  updateDistance(); // FORCE UPDATE
+});
 // CLICK TO MOVE TARGET
 map.on('click', function(e) {
   targetLat = e.latlng.lat;
