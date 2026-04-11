@@ -94,8 +94,18 @@ if (navigator.geolocation) {
     map.setView([lat, lng]);
 
     let targetLat = 51.505;
-    let targetLng = -0.09;
+let targetLng = -0.09;
 
+// target marker (the hole)
+var targetMarker = L.marker([targetLat, targetLng]).addTo(map);
+
+// when you tap map → set new hole
+map.on('click', function(e) {
+  targetLat = e.latlng.lat;
+  targetLng = e.latlng.lng;
+
+  targetMarker.setLatLng([targetLat, targetLng]);
+});
     let distance = getDistance(lat, lng, targetLat, targetLng);
     document.getElementById("distance").innerText = "Distance: " + Math.round(distance) + " m";
 
