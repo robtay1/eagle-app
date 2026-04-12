@@ -1,39 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Eagle AI Caddie</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
-body {
-  margin:0;
-  background:black;
-  color:white;
-  font-family:-apple-system;
-  text-align:center;
-}
-
-#map {
-  height:50vh;
-  width:100%;
-}
-
-.info { font-size:20px; margin:5px; }
-#score { font-size:40px; margin:10px; }
-
-button {
-  width:90%;
-  padding:15px;
-  margin:8px;
-  border:none;
-  border-radius:10px;
-  background:limegreen;
-  color:black;
-  font-size:18px;
-}
+body {margin:0;background:black;color:white;font-family:-apple-system;text-align:center;}
+#map {height:55vh;width:100%;}
+.info {font-size:18px;margin:6px;}
+#score {font-size:30px;margin:8px;}
+button {width:90%;padding:12px;margin:6px;border:none;border-radius:10px;background:#00c853;color:black;font-size:16px;}
 </style>
 </head>
 
@@ -61,36 +40,28 @@ let userMarker = null;
 let holeMarker = null;
 let holePosition = null;
 let score = 0;
-let shots = [];
-let shotline = null;
 
 // BUTTONS
 document.getElementById("startBtn").onclick = startHole;
 document.getElementById("shotBtn").onclick = addShot;
 
-// 📍 GPS LOOP (runs every 2s)
+// GPS LOOP
 function updatePosition() {
   navigator.geolocation.getCurrentPosition(function(pos) {
 
     let lat = pos.coords.latitude;
     let lng = pos.coords.longitude;
 
-    // Move map to YOU
     map.setView([lat, lng], 17);
 
-    // Update or create your marker
     if (!userMarker) {
       userMarker = L.marker([lat, lng]).addTo(map);
     } else {
       userMarker.setLatLng([lat, lng]);
     }
 
-    // ✅ ONLY calculate distance if hole is fixed
     if (holePosition) {
-      let distance = map.distance(
-        [lat, lng],
-        holePosition
-      );
+      let distance = map.distance([lat, lng], holePosition);
 
       document.getElementById("distance").innerText =
         "Distance: " + Math.round(distance) + " m";
@@ -109,50 +80,38 @@ function updatePosition() {
 
 setInterval(updatePosition, 2000);
 
-// ⛳ Start Hole (FIXED POSITION)
+// START HOLE
 function startHole() {
   if (!userMarker) return;
 
   let pos = userMarker.getLatLng();
 
-  // 🔥 Set hole ONCE and store it
   holePosition = [pos.lat + 0.0005, pos.lng];
 
-  // Remove old marker
   if (holeMarker) {
     map.removeLayer(holeMarker);
   }
 
-  // Add new hole marker
   holeMarker = L.marker(holePosition).addTo(map);
 }
 
-// ➕ Shot
+// SHOT (simple for now)
 function addShot() {
-  if (!userMarker) return;
-
-  let pos = userMarker.getLatLng();
-
-  shots.push([pos.lat, pos.lng]);
-
-  // Remove old line
-  if (shotLine) {
-    map.removeLayer(shotLine);
-  }
-
-  // Draw new line
-  shotLine = L.polyline(shots, {
-    color: 'yellow',
-    weight: 4
-  }).addTo(map);
-
   score++;
   document.getElementById("score").innerText = "Score: " + score;
 }
-  // Add new marker
-  holeMarker = L.marker(holePosition).addTo(map);
 
+// TAP TO SET HOLE
+map.on('click', function(e) {
+  holePosition = [e.latlng.lat, e.latlng.lng];
+
+  if (holeMarker) {
+    map.removeLayer(holeMarker);
+  }
+
+  holeMarker = L.marker(holePosition).addTo(map);
 });
 </script>
+
 </body>
 </html>
