@@ -130,6 +130,20 @@ function addShot() {
   score++;
   document.getElementById("score").innerText = "Score: " + score;
 }
+  map.on('click', function(e) {
+
+  // Set new hole position
+  holePosition = [e.latlng.lat, e.latlng.lng];
+
+  // Remove old marker
+  if (holeMarker) {
+    map.removeLayer(holeMarker);
+  }
+
+  // Add new marker
+  holeMarker = L.marker(holePosition).addTo(map);
+
+});
 </script>
 </body>
 </html>
