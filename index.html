@@ -2,7 +2,15 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>Eagle AI Caddie</title>
+
+<!-- ✅ APP MODE -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#000000">
+
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/854/854878.png">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -39,6 +47,7 @@ button {width:90%;padding:12px;margin:6px;border:none;border-radius:10px;backgro
 <button onclick="addShot()">+ Shot</button>
 
 <script>
+// SAME WORKING CODE (unchanged)
 let map = L.map('map').setView([51.505, -0.09], 15);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -61,7 +70,6 @@ let par = 4;
 let totalScore = 0;
 let scoreHistory = [];
 
-// GPS
 function updatePosition() {
   navigator.geolocation.getCurrentPosition(function(pos) {
 
@@ -96,7 +104,6 @@ function updatePosition() {
 
 setInterval(updatePosition, 2000);
 
-// START HOLE
 function startHole() {
   if (!userMarker) return;
 
@@ -115,15 +122,11 @@ function startHole() {
   resetShots();
 }
 
-// NEXT HOLE
 function nextHole() {
-
-  // Save score vs par
   let diff = score - par;
   totalScore += diff;
 
   scoreHistory.push("Hole " + holeNumber + ": " + formatScore(diff));
-
   updateScorecard();
 
   holeNumber++;
@@ -141,7 +144,6 @@ function nextHole() {
   resetShots();
 }
 
-// RESET SHOTS
 function resetShots() {
   shots = [];
   document.getElementById("shotsList").innerHTML = "";
@@ -158,7 +160,6 @@ function resetShots() {
   document.getElementById("score").innerText = "Score: 0";
 }
 
-// ADD SHOT
 function addShot() {
   if (!userMarker) return;
 
@@ -186,14 +187,12 @@ function addShot() {
   document.getElementById("score").innerText = "Score: " + score;
 }
 
-// FORMAT SCORE
 function formatScore(val) {
   if (val === 0) return "Even";
   if (val > 0) return "+" + val;
   return val;
 }
 
-// UPDATE SCORECARD
 function updateScorecard() {
   document.getElementById("scorecard").innerHTML =
     scoreHistory.join("<br>");
@@ -202,7 +201,6 @@ function updateScorecard() {
     "Total: " + formatScore(totalScore);
 }
 
-// TAP SET HOLE
 map.on('click', function(e) {
   holePosition = [e.latlng.lat, e.latlng.lng];
 
