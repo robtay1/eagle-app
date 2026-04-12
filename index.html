@@ -8,11 +8,39 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
-body {margin:0;background:black;color:white;font-family:-apple-system;text-align:center;}
-#map {height:55vh;width:100%;}
-.info {font-size:18px;margin:6px;}
-#score {font-size:30px;margin:8px;}
-button {width:90%;padding:12px;margin:6px;border:none;border-radius:10px;background:#00c853;color:black;font-size:16px;}
+body {
+  margin:0;
+  background:black;
+  color:white;
+  font-family:-apple-system;
+  text-align:center;
+}
+
+#map {
+  height:55vh;
+  width:100%;
+}
+
+.info {
+  font-size:18px;
+  margin:6px;
+}
+
+#score {
+  font-size:28px;
+  margin:8px;
+}
+
+button {
+  width:90%;
+  padding:12px;
+  margin:6px;
+  border:none;
+  border-radius:10px;
+  background:#00c853;
+  color:black;
+  font-size:16px;
+}
 </style>
 </head>
 
@@ -26,40 +54,44 @@ button {width:90%;padding:12px;margin:6px;border:none;border-radius:10px;backgro
 <div class="info" id="club">Club: --</div>
 <div id="score">Score: 0</div>
 
-<button id="startBtn">⛳ Start Hole</button>
-<button id="shotBtn">+ Shot</button>
+<button onclick="startHole()">⛳ Start Hole</button>
+<button onclick="addShot()">+ Shot</button>
 
 <script>
+// MAP
 let map = L.map('map').setView([51.505, -0.09], 15);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19
 }).addTo(map);
 
+// VARIABLES
 let userMarker = null;
 let holeMarker = null;
 let holePosition = null;
+
 let score = 0;
+let shots = [];
+let shotLine = null;
 
-// BUTTONS
-document.getElementById("startBtn").onclick = startHole;
-document.getElementById("shotBtn").onclick = addShot;
-
-// GPS LOOP
+// GPS LOOP (stable for iPhone)
 function updatePosition() {
   navigator.geolocation.getCurrentPosition(function(pos) {
 
     let lat = pos.coords.latitude;
     let lng = pos.coords.longitude;
 
+    // follow user
     map.setView([lat, lng], 17);
 
+    // update user marker
     if (!userMarker) {
       userMarker = L.marker([lat, lng]).addTo(map);
     } else {
       userMarker.setLatLng([lat, lng]);
     }
 
+    // update distance
     if (holePosition) {
       let distance = map.distance([lat, lng], holePosition);
 
@@ -78,6 +110,7 @@ function updatePosition() {
   });
 }
 
+// run every 2 seconds
 setInterval(updatePosition, 2000);
 
 // START HOLE
@@ -93,10 +126,35 @@ function startHole() {
   }
 
   holeMarker = L.marker(holePosition).addTo(map);
+
+  // reset shots
+  shots = [];
+  if (shotLine) {
+    map.removeLayer(shotLine);
+    shotLine = null;
+  }
+
+  score = 0;
+  document.getElementById("score").innerText = "Score: 0";
 }
 
-// SHOT (simple for now)
+// ADD SHOT (with line)
 function addShot() {
+  if (!userMarker) return;
+
+  let pos = userMarker.getLatLng();
+
+  shots.push([pos.lat, pos.lng]);
+
+  if (shotLine) {
+    map.removeLayer(shotLine);
+  }
+
+  shotLine = L.polyline(shots, {
+    color: 'yellow',
+    weight: 4
+  }).addTo(map);
+
   score++;
   document.getElementById("score").innerText = "Score: " + score;
 }
