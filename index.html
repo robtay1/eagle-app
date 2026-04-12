@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Eagle AI Caddie</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
@@ -9,38 +9,30 @@
 
 <style>
 body {
-    margin:0;
-    background:black;
-    color:white;
-    font-family:-apple-system;
-    text-align:center;
+  margin:0;
+  background:black;
+  color:white;
+  font-family:-apple-system;
+  text-align:center;
 }
-
-h2 { margin:10px; }
 
 #map {
-    height:55vh;
-    width:100%;
+  height:50vh;
+  width:100%;
 }
 
-.info {
-    font-size:20px;
-    margin:6px;
-}
-
-#score {
-    font-size:40px;
-    margin:10px;
-}
+.info { font-size:20px; margin:5px; }
+#score { font-size:40px; margin:10px; }
 
 button {
-    width:90%;
-    padding:15px;
-    margin:8px;
-    border:none;
-    border-radius:10px;
-    font-size:18px;
-    background:limegreen;
+  width:90%;
+  padding:15px;
+  margin:8px;
+  border:none;
+  border-radius:10px;
+  background:limegreen;
+  color:black;
+  font-size:18px;
 }
 </style>
 </head>
@@ -59,87 +51,76 @@ button {
 <button onclick="addShot()">+ Shot</button>
 
 <script>
-// INIT MAP (default view only until GPS loads)
-let map = L.map('map').setView([0,0], 2);
+let map = L.map('map').setView([51.505, -0.09], 15);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
+  maxZoom: 19
 }).addTo(map);
 
-// VARIABLES
 let userMarker = null;
 let holeMarker = null;
-let currentPosition = null;
-let holePosition = null;
 let score = 0;
 
-// 📍 LIVE GPS (STABLE VERSION)
-navigator.geolocation.watchPosition(
-    position => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        currentPosition = [lat, lng];
+// 📍 LIVE GPS TRACKING (this is the key fix)
+navigator.geolocation.watchPosition(pos => {
+  let lat = pos.coords.latitude;
+  let lng = pos.coords.longitude;
 
-        // Create or update user marker
-        if (!userMarker) {
-            userMarker = L.marker(currentPosition).addTo(map);
-        } else {
-            userMarker.setLatLng(currentPosition);
-        }
+  // Move map with you
+  map.setView([lat, lng], 17);
 
-        // ALWAYS FOLLOW USER
-        map.setView(currentPosition, 17);
+  // Update / create user marker
+  if (!userMarker) {
+    userMarker = L.marker([lat, lng]).addTo(map);
+  } else {
+    userMarker.setLatLng([lat, lng]);
+  }
 
-        updateDistance();
-    },
-    error => {
-        alert("Turn on location services");
-        console.log(error);
-    },
-    { enableHighAccuracy: true }
-);
-
-// ⛳ START HOLE (simple forward target)
-function startHole() {
-    if (!currentPosition) return;
-
-    holePosition = [
-        currentPosition[0] + 0.0005,
-        currentPosition[1] + 0.0005
-    ];
-
-    if (!holeMarker) {
-        holeMarker = L.marker(holePosition).addTo(map);
-    } else {
-        holeMarker.setLatLng(holePosition);
-    }
-
-    updateDistance();
-}
-
-// 📏 DISTANCE + CLUB LOGIC
-function updateDistance() {
-    if (!currentPosition || !holePosition) return;
-
-    const distance = map.distance(currentPosition, holePosition);
+  // 🔥 Distance updates LIVE
+  if (holeMarker) {
+    let distance = map.distance(
+      userMarker.getLatLng(),
+      holeMarker.getLatLng()
+    );
 
     document.getElementById("distance").innerText =
-        "Distance: " + Math.round(distance) + " m";
+      "Distance: " + Math.round(distance) + " m";
 
+    // Club logic
     let club = "Driver";
     if (distance < 200) club = "Iron";
     if (distance < 100) club = "Wedge";
-    if (distance < 30) club = "Putter";
+    if (distance < 20) club = "Putter";
 
     document.getElementById("club").innerText =
-        "Club: " + club;
+      "Club: " + club;
+  }
+
+}, err => {
+  alert("Turn on location services!");
+});
+
+// ⛳ Start hole (FIXED - no duplicate markers)
+function startHole() {
+  if (!userMarker) return;
+
+  // Remove old hole if exists
+  if (holeMarker) {
+    map.removeLayer(holeMarker);
+  }
+
+  // Place hole slightly ahead of you (demo)
+  let pos = userMarker.getLatLng();
+  holeMarker = L.marker([pos.lat + 0.0005, pos.lng]).addTo(map);
+
+  document.getElementById("distance").innerText = "Distance: --";
+  document.getElementById("club").innerText = "Club: --";
 }
 
-// 🏌️ SHOT TRACKING
+// ➕ Shot tracking
 function addShot() {
-    score++;
-    document.getElementById("score").innerText =
-        "Score: " + score;
+  score++;
+  document.getElementById("score").innerText = "Score: " + score;
 }
 </script>
 
