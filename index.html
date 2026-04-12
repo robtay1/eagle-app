@@ -16,13 +16,17 @@ body {
   text-align:center;
 }
 
-#map {
-  height:55vh;
-  width:100%;
-}
+#map { height:55vh; width:100%; }
 
 .info { font-size:18px; margin:6px; }
 #score { font-size:28px; margin:8px; }
+
+#shotsList {
+  font-size:14px;
+  max-height:120px;
+  overflow:auto;
+  margin:10px;
+}
 
 button {
   width:90%;
@@ -47,6 +51,8 @@ button {
 <div class="info" id="club">Club: --</div>
 <div id="score">Score: 0</div>
 
+<div id="shotsList"></div>
+
 <button onclick="startHole()">⛳ Start Hole</button>
 <button onclick="addShot()">+ Shot</button>
 
@@ -67,7 +73,7 @@ let shots = [];
 let shotLine = null;
 let shotMarkers = [];
 
-// GPS LOOP
+// GPS
 function updatePosition() {
   navigator.geolocation.getCurrentPosition(function(pos) {
 
@@ -102,20 +108,18 @@ function updatePosition() {
 
 setInterval(updatePosition, 2000);
 
-// ⛳ START HOLE (NOW VISIBLE + WORKING)
+// START HOLE
 function startHole() {
   if (!userMarker) return;
 
   let pos = userMarker.getLatLng();
 
-  // 📍 Place tee marker
   if (teeMarker) map.removeLayer(teeMarker);
   teeMarker = L.circleMarker([pos.lat, pos.lng], {
     radius: 8,
     color: 'white'
   }).addTo(map);
 
-  // If no hole yet, set one ahead
   if (!holePosition) {
     holePosition = [pos.lat + 0.0005, pos.lng];
 
@@ -123,8 +127,8 @@ function startHole() {
     holeMarker = L.marker(holePosition).addTo(map);
   }
 
-  // 🔄 Reset shots
   shots = [];
+  document.getElementById("shotsList").innerHTML = "";
 
   if (shotLine) {
     map.removeLayer(shotLine);
@@ -134,12 +138,11 @@ function startHole() {
   shotMarkers.forEach(m => map.removeLayer(m));
   shotMarkers = [];
 
-  // 🔄 Reset score
   score = 0;
   document.getElementById("score").innerText = "Score: 0";
 }
 
-// ➕ ADD SHOT
+// ADD SHOT WITH DISTANCE
 function addShot() {
   if (!userMarker) return;
 
@@ -155,6 +158,7 @@ function addShot() {
 
   shotMarkers.push(marker);
 
+  // Draw line
   if (shots.length > 1) {
     if (shotLine) map.removeLayer(shotLine);
 
@@ -162,13 +166,22 @@ function addShot() {
       color: 'yellow',
       weight: 4
     }).addTo(map);
+
+    // 📏 Calculate shot distance
+    let prev = shots[shots.length - 2];
+    let dist = map.distance(prev, point);
+
+    let text = "Shot " + shots.length + ": " + Math.round(dist) + " m";
+
+    let div = document.getElementById("shotsList");
+    div.innerHTML += text + "<br>";
   }
 
   score++;
   document.getElementById("score").innerText = "Score: " + score;
 }
 
-// 🎯 TAP TO SET HOLE
+// TAP SET HOLE
 map.on('click', function(e) {
   holePosition = [e.latlng.lat, e.latlng.lng];
 
