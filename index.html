@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -21,15 +22,8 @@ body {
   width:100%;
 }
 
-.info {
-  font-size:18px;
-  margin:6px;
-}
-
-#score {
-  font-size:28px;
-  margin:8px;
-}
+.info { font-size:18px; margin:6px; }
+#score { font-size:28px; margin:8px; }
 
 button {
   width:90%;
@@ -73,25 +67,23 @@ let holePosition = null;
 let score = 0;
 let shots = [];
 let shotLine = null;
+let shotMarkers = [];
 
-// GPS LOOP (stable for iPhone)
+// GPS LOOP
 function updatePosition() {
   navigator.geolocation.getCurrentPosition(function(pos) {
 
     let lat = pos.coords.latitude;
     let lng = pos.coords.longitude;
 
-    // follow user
     map.setView([lat, lng], 17);
 
-    // update user marker
     if (!userMarker) {
       userMarker = L.marker([lat, lng]).addTo(map);
     } else {
       userMarker.setLatLng([lat, lng]);
     }
 
-    // update distance
     if (holePosition) {
       let distance = map.distance([lat, lng], holePosition);
 
@@ -110,7 +102,6 @@ function updatePosition() {
   });
 }
 
-// run every 2 seconds
 setInterval(updatePosition, 2000);
 
 // START HOLE
@@ -121,39 +112,50 @@ function startHole() {
 
   holePosition = [pos.lat + 0.0005, pos.lng];
 
-  if (holeMarker) {
-    map.removeLayer(holeMarker);
-  }
-
+  if (holeMarker) map.removeLayer(holeMarker);
   holeMarker = L.marker(holePosition).addTo(map);
 
-  // reset shots
+  // RESET SHOTS
   shots = [];
+
   if (shotLine) {
     map.removeLayer(shotLine);
     shotLine = null;
   }
 
+  shotMarkers.forEach(m => map.removeLayer(m));
+  shotMarkers = [];
+
   score = 0;
   document.getElementById("score").innerText = "Score: 0";
 }
 
-// ADD SHOT (with line)
+// ADD SHOT
 function addShot() {
   if (!userMarker) return;
 
   let pos = userMarker.getLatLng();
+  let point = [pos.lat, pos.lng];
 
-  shots.push([pos.lat, pos.lng]);
+  shots.push(point);
 
-  if (shotLine) {
-    map.removeLayer(shotLine);
-  }
-
-  shotLine = L.polyline(shots, {
-    color: 'yellow',
-    weight: 4
+  // 📍 Add visible marker
+  let marker = L.circleMarker(point, {
+    radius: 6,
+    color: 'yellow'
   }).addTo(map);
+
+  shotMarkers.push(marker);
+
+  // 🟡 Draw line if 2+ shots
+  if (shots.length > 1) {
+    if (shotLine) map.removeLayer(shotLine);
+
+    shotLine = L.polyline(shots, {
+      color: 'yellow',
+      weight: 4
+    }).addTo(map);
+  }
 
   score++;
   document.getElementById("score").innerText = "Score: " + score;
@@ -163,10 +165,7 @@ function addShot() {
 map.on('click', function(e) {
   holePosition = [e.latlng.lat, e.latlng.lng];
 
-  if (holeMarker) {
-    map.removeLayer(holeMarker);
-  }
-
+  if (holeMarker) map.removeLayer(holeMarker);
   holeMarker = L.marker(holePosition).addTo(map);
 });
 </script>
