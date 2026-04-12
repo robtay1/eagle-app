@@ -59,31 +59,35 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 let userMarker = null;
 let holeMarker = null;
+let holePosition = null;
 let score = 0;
 
-// ✅ BUTTONS (fixes your broken clicks)
+// BUTTONS
 document.getElementById("startBtn").onclick = startHole;
 document.getElementById("shotBtn").onclick = addShot;
 
-// ✅ STABLE GPS LOOP (works on iPhone)
+// 📍 GPS LOOP (runs every 2s)
 function updatePosition() {
   navigator.geolocation.getCurrentPosition(function(pos) {
 
     let lat = pos.coords.latitude;
     let lng = pos.coords.longitude;
 
+    // Move map to YOU
     map.setView([lat, lng], 17);
 
+    // Update or create your marker
     if (!userMarker) {
       userMarker = L.marker([lat, lng]).addTo(map);
     } else {
       userMarker.setLatLng([lat, lng]);
     }
 
-    if (holeMarker) {
+    // ✅ ONLY calculate distance if hole is fixed
+    if (holePosition) {
       let distance = map.distance(
-        userMarker.getLatLng(),
-        holeMarker.getLatLng()
+        [lat, lng],
+        holePosition
       );
 
       document.getElementById("distance").innerText =
@@ -101,22 +105,24 @@ function updatePosition() {
   });
 }
 
-// 🔥 Run every 2 seconds (THIS is the reliable fix)
 setInterval(updatePosition, 2000);
 
-// ⛳ Start Hole (no duplicates)
+// ⛳ Start Hole (FIXED POSITION)
 function startHole() {
   if (!userMarker) return;
 
+  let pos = userMarker.getLatLng();
+
+  // 🔥 Set hole ONCE and store it
+  holePosition = [pos.lat + 0.0005, pos.lng];
+
+  // Remove old marker
   if (holeMarker) {
     map.removeLayer(holeMarker);
   }
 
-  let pos = userMarker.getLatLng();
-  holeMarker = L.marker([pos.lat + 0.0005, pos.lng]).addTo(map);
-
-  document.getElementById("distance").innerText = "Distance: --";
-  document.getElementById("club").innerText = "Club: --";
+  // Add new hole marker
+  holeMarker = L.marker(holePosition).addTo(map);
 }
 
 // ➕ Shot
@@ -125,6 +131,5 @@ function addShot() {
   document.getElementById("score").innerText = "Score: " + score;
 }
 </script>
-
 </body>
 </html>
