@@ -62,10 +62,49 @@ let holeMarker = null;
 let score = 0;
 
 // 📍 LIVE GPS TRACKING (this is the key fix)
-navigator.geolocation.watchPosition(pos => {
-  let lat = pos.coords.latitude;
-  let lng = pos.coords.longitude;
+let watchId = navigator.geolocation.watchPosition(
+  function(pos) {
+    let lat = pos.coords.latitude;
+    let lng = pos.coords.longitude;
 
+    // Update map position
+    map.setView([lat, lng], 17);
+
+    if (!userMarker) {
+      userMarker = L.marker([lat, lng]).addTo(map);
+    } else {
+      userMarker.setLatLng([lat, lng]);
+    }
+
+    // Update distance LIVE
+    if (holeMarker) {
+      let distance = map.distance(
+        userMarker.getLatLng(),
+        holeMarker.getLatLng()
+      );
+
+      document.getElementById("distance").innerText =
+        "Distance: " + Math.round(distance) + " m";
+
+      // Club logic
+      let club = "Driver";
+      if (distance < 200) club = "Iron";
+      if (distance < 100) club = "Wedge";
+      if (distance < 20) club = "Putter";
+
+      document.getElementById("club").innerText =
+        "Club: " + club;
+    }
+  },
+  function(err) {
+    alert("Location error: " + err.message);
+  },
+  {
+    enableHighAccuracy: true,
+    maximumAge: 0,
+    timeout: 5000
+  }
+);
   // Move map with you
   map.setView([lat, lng], 17);
 
