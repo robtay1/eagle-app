@@ -13,6 +13,7 @@ body {margin:0;background:black;color:white;font-family:-apple-system;text-align
 .info {font-size:18px;margin:6px;}
 #score {font-size:28px;margin:8px;}
 #shotsList {font-size:14px;max-height:120px;overflow:auto;margin:10px;}
+#scorecard {font-size:14px;margin:10px;}
 button {width:90%;padding:12px;margin:6px;border:none;border-radius:10px;background:#00c853;color:black;font-size:16px;}
 </style>
 </head>
@@ -26,9 +27,12 @@ button {width:90%;padding:12px;margin:6px;border:none;border-radius:10px;backgro
 <div class="info" id="holeInfo">Hole 1 • Par 4</div>
 <div class="info" id="distance">Distance: --</div>
 <div class="info" id="club">Club: --</div>
+
 <div id="score">Score: 0</div>
+<div class="info" id="totalScore">Total: Even</div>
 
 <div id="shotsList"></div>
+<div id="scorecard"></div>
 
 <button onclick="startHole()">⛳ Start Hole</button>
 <button onclick="nextHole()">➡️ Next Hole</button>
@@ -53,6 +57,9 @@ let shotMarkers = [];
 
 let holeNumber = 1;
 let par = 4;
+
+let totalScore = 0;
+let scoreHistory = [];
 
 // GPS
 function updatePosition() {
@@ -110,9 +117,17 @@ function startHole() {
 
 // NEXT HOLE
 function nextHole() {
+
+  // Save score vs par
+  let diff = score - par;
+  totalScore += diff;
+
+  scoreHistory.push("Hole " + holeNumber + ": " + formatScore(diff));
+
+  updateScorecard();
+
   holeNumber++;
 
-  // random par (simple version)
   let pars = [3,4,4,4,5];
   par = pars[Math.floor(Math.random()*pars.length)];
 
@@ -169,6 +184,22 @@ function addShot() {
 
   score++;
   document.getElementById("score").innerText = "Score: " + score;
+}
+
+// FORMAT SCORE
+function formatScore(val) {
+  if (val === 0) return "Even";
+  if (val > 0) return "+" + val;
+  return val;
+}
+
+// UPDATE SCORECARD
+function updateScorecard() {
+  document.getElementById("scorecard").innerHTML =
+    scoreHistory.join("<br>");
+
+  document.getElementById("totalScore").innerText =
+    "Total: " + formatScore(totalScore);
 }
 
 // TAP SET HOLE
