@@ -61,6 +61,8 @@ let userMarker = null;
 let holeMarker = null;
 let holePosition = null;
 let score = 0;
+let shots = [];
+let shotline = null;
 
 // BUTTONS
 document.getElementById("startBtn").onclick = startHole;
@@ -127,19 +129,26 @@ function startHole() {
 
 // ➕ Shot
 function addShot() {
+  if (!userMarker) return;
+
+  let pos = userMarker.getLatLng();
+
+  shots.push([pos.lat, pos.lng]);
+
+  // Remove old line
+  if (shotLine) {
+    map.removeLayer(shotLine);
+  }
+
+  // Draw new line
+  shotLine = L.polyline(shots, {
+    color: 'yellow',
+    weight: 4
+  }).addTo(map);
+
   score++;
   document.getElementById("score").innerText = "Score: " + score;
 }
-  map.on('click', function(e) {
-
-  // Set new hole position
-  holePosition = [e.latlng.lat, e.latlng.lng];
-
-  // Remove old marker
-  if (holeMarker) {
-    map.removeLayer(holeMarker);
-  }
-
   // Add new marker
   holeMarker = L.marker(holePosition).addTo(map);
 
