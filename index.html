@@ -8,10 +8,40 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
-body {margin:0;background:black;color:white;font-family:-apple-system;text-align:center;}
-#map {height:55vh;width:100%;}
-.info {font-size:18px;margin:6px;}
-button {width:90%;padding:12px;margin:6px;border:none;border-radius:10px;background:#00c853;color:black;font-size:16px;}
+body {
+    margin:0;
+    background:black;
+    color:white;
+    font-family:-apple-system;
+    text-align:center;
+}
+
+h2 { margin:10px; }
+
+#map {
+    height:55vh;
+    width:100%;
+}
+
+.info {
+    font-size:20px;
+    margin:6px;
+}
+
+#score {
+    font-size:40px;
+    margin:10px;
+}
+
+button {
+    width:90%;
+    padding:15px;
+    margin:8px;
+    border:none;
+    border-radius:10px;
+    font-size:18px;
+    background:limegreen;
+}
 </style>
 </head>
 
@@ -23,122 +53,94 @@ button {width:90%;padding:12px;margin:6px;border:none;border-radius:10px;backgro
 
 <div class="info" id="distance">Distance: --</div>
 <div class="info" id="club">Club: --</div>
+<div id="score">Score: 0</div>
 
-<button onclick="startHole()">🏁 Start Hole</button>
+<button onclick="startHole()">⛳ Start Hole</button>
 <button onclick="addShot()">+ Shot</button>
 
 <script>
-// MAP
-var map = L.map('map').setView([51.505, -0.09], 15);
+// INIT MAP (default view only until GPS loads)
+let map = L.map('map').setView([0,0], 2);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19
+    maxZoom: 19,
 }).addTo(map);
 
 // VARIABLES
-let userLat = 51.505;
-let userLng = -0.09;
+let userMarker = null;
+let holeMarker = null;
+let currentPosition = null;
+let holePosition = null;
+let score = 0;
 
-let targetLat = 51.506;
-let targetLng = -0.091;
-
-let shots = [];
-let shotLine = null;
-
-// MARKERS (ONLY ONE OF EACH)
-var userMarker = L.marker([userLat, userLng]).addTo(map);
-var targetMarker = L.marker([targetLat, targetLng]).addTo(map);
-
-// START HOLE
-function startHole(){
-  shots = [];
-
-  if (shotLine) {
-    map.removeLayer(shotLine);
-    shotLine = null;
-  }
-
-  targetLat = userLat + 0.0008;
-  targetLng = userLng;
-
-  targetMarker.setLatLng([targetLat, targetLng]);
-
-  updateDistance();
-}
-
-// ADD SHOT
-function addShot(){
-  shots.push([userLat, userLng]);
-
-  if (shotLine) {
-    map.removeLayer(shotLine);
-  }
-
-  shotLine = L.polyline(shots, {color:'yellow'}).addTo(map);
-}
-
-// TAP TO SET HOLE
-map.on('click', function(e) {
-  targetLat = e.latlng.lat;
-  targetLng = e.latlng.lng;
-
-  targetMarker.setLatLng([targetLat, targetLng]);
-  updateDistance();
-});
-
-// DISTANCE
-function getDistance(lat1, lon1, lat2, lon2){
-  const R = 6371e3;
-  const φ1 = lat1*Math.PI/180;
-  const φ2 = lat2*Math.PI/180;
-  const Δφ = (lat2-lat1)*Math.PI/180;
-  const Δλ = (lon2-lon1)*Math.PI/180;
-
-  const a = Math.sin(Δφ/2)*Math.sin(Δφ/2) +
-            Math.cos(φ1)*Math.cos(φ2) *
-            Math.sin(Δλ/2)*Math.sin(Δλ/2);
-
-  const c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-  return R*c;
-}
-
-// UPDATE DISTANCE
-function updateDistance(){
-  let d = getDistance(userLat, userLng, targetLat, targetLng);
-
-  document.getElementById("distance").innerText =
-    "Distance: " + Math.round(d) + " m";
-
-  let club = "Driver";
-  if(d < 150) club = "Wedge";
-  else if(d < 200) club = "Iron";
-
-  document.getElementById("club").innerText =
-    "Club: " + club;
-}
-
-// LIVE GPS (FIXED)
+// 📍 LIVE GPS (STABLE VERSION)
 navigator.geolocation.watchPosition(
-  function(pos){
-    userLat = pos.coords.latitude;
-    userLng = pos.coords.longitude;
+    position => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        currentPosition = [lat, lng];
 
-    userMarker.setLatLng([userLat, userLng]);
+        // Create or update user marker
+        if (!userMarker) {
+            userMarker = L.marker(currentPosition).addTo(map);
+        } else {
+            userMarker.setLatLng(currentPosition);
+        }
 
-    updateDistance();
-  },
-  function(err){
-    console.log(err);
-  },
-  {
-    enableHighAccuracy: true,
-    maximumAge: 0
-  }
+        // ALWAYS FOLLOW USER
+        map.setView(currentPosition, 17);
+
+        updateDistance();
+    },
+    error => {
+        alert("Turn on location services");
+        console.log(error);
+    },
+    { enableHighAccuracy: true }
 );
 
-// INITIAL
-updateDistance();
+// ⛳ START HOLE (simple forward target)
+function startHole() {
+    if (!currentPosition) return;
+
+    holePosition = [
+        currentPosition[0] + 0.0005,
+        currentPosition[1] + 0.0005
+    ];
+
+    if (!holeMarker) {
+        holeMarker = L.marker(holePosition).addTo(map);
+    } else {
+        holeMarker.setLatLng(holePosition);
+    }
+
+    updateDistance();
+}
+
+// 📏 DISTANCE + CLUB LOGIC
+function updateDistance() {
+    if (!currentPosition || !holePosition) return;
+
+    const distance = map.distance(currentPosition, holePosition);
+
+    document.getElementById("distance").innerText =
+        "Distance: " + Math.round(distance) + " m";
+
+    let club = "Driver";
+    if (distance < 200) club = "Iron";
+    if (distance < 100) club = "Wedge";
+    if (distance < 30) club = "Putter";
+
+    document.getElementById("club").innerText =
+        "Club: " + club;
+}
+
+// 🏌️ SHOT TRACKING
+function addShot() {
+    score++;
+    document.getElementById("score").innerText =
+        "Score: " + score;
+}
 </script>
 
 </body>
