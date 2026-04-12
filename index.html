@@ -47,8 +47,8 @@ button {
 <div class="info" id="club">Club: --</div>
 <div id="score">Score: 0</div>
 
-<button onclick="startHole()">⛳ Start Hole</button>
-<button onclick="addShot()">+ Shot</button>
+<button id="startBtn">⛳ Start Hole</button>
+<button id="shotBtn">+ Shot</button>
 
 <script>
 let map = L.map('map').setView([51.505, -0.09], 15);
@@ -61,13 +61,17 @@ let userMarker = null;
 let holeMarker = null;
 let score = 0;
 
-// 📍 LIVE GPS TRACKING (this is the key fix)
-let watchId = navigator.geolocation.watchPosition(
-  function(pos) {
+// ✅ BUTTONS (fixes your broken clicks)
+document.getElementById("startBtn").onclick = startHole;
+document.getElementById("shotBtn").onclick = addShot;
+
+// ✅ STABLE GPS LOOP (works on iPhone)
+function updatePosition() {
+  navigator.geolocation.getCurrentPosition(function(pos) {
+
     let lat = pos.coords.latitude;
     let lng = pos.coords.longitude;
 
-    // Update map position
     map.setView([lat, lng], 17);
 
     if (!userMarker) {
@@ -76,7 +80,6 @@ let watchId = navigator.geolocation.watchPosition(
       userMarker.setLatLng([lat, lng]);
     }
 
-    // Update distance LIVE
     if (holeMarker) {
       let distance = map.distance(
         userMarker.getLatLng(),
@@ -86,7 +89,6 @@ let watchId = navigator.geolocation.watchPosition(
       document.getElementById("distance").innerText =
         "Distance: " + Math.round(distance) + " m";
 
-      // Club logic
       let club = "Driver";
       if (distance < 200) club = "Iron";
       if (distance < 100) club = "Wedge";
@@ -95,60 +97,21 @@ let watchId = navigator.geolocation.watchPosition(
       document.getElementById("club").innerText =
         "Club: " + club;
     }
-  },
-  function(err) {
-    alert("Location error: " + err.message);
-  },
-  {
-    enableHighAccuracy: true,
-    maximumAge: 0,
-    timeout: 5000
-  }
-);
-  // Move map with you
-  map.setView([lat, lng], 17);
 
-  // Update / create user marker
-  if (!userMarker) {
-    userMarker = L.marker([lat, lng]).addTo(map);
-  } else {
-    userMarker.setLatLng([lat, lng]);
-  }
+  });
+}
 
-  // 🔥 Distance updates LIVE
-  if (holeMarker) {
-    let distance = map.distance(
-      userMarker.getLatLng(),
-      holeMarker.getLatLng()
-    );
+// 🔥 Run every 2 seconds (THIS is the reliable fix)
+setInterval(updatePosition, 2000);
 
-    document.getElementById("distance").innerText =
-      "Distance: " + Math.round(distance) + " m";
-
-    // Club logic
-    let club = "Driver";
-    if (distance < 200) club = "Iron";
-    if (distance < 100) club = "Wedge";
-    if (distance < 20) club = "Putter";
-
-    document.getElementById("club").innerText =
-      "Club: " + club;
-  }
-
-}, err => {
-  alert("Turn on location services!");
-});
-
-// ⛳ Start hole (FIXED - no duplicate markers)
+// ⛳ Start Hole (no duplicates)
 function startHole() {
   if (!userMarker) return;
 
-  // Remove old hole if exists
   if (holeMarker) {
     map.removeLayer(holeMarker);
   }
 
-  // Place hole slightly ahead of you (demo)
   let pos = userMarker.getLatLng();
   holeMarker = L.marker([pos.lat + 0.0005, pos.lng]).addTo(map);
 
@@ -156,7 +119,7 @@ function startHole() {
   document.getElementById("club").innerText = "Club: --";
 }
 
-// ➕ Shot tracking
+// ➕ Shot
 function addShot() {
   score++;
   document.getElementById("score").innerText = "Score: " + score;
