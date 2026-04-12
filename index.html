@@ -59,6 +59,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 let userMarker = null;
 let holeMarker = null;
+let teeMarker = null;
 let holePosition = null;
 
 let score = 0;
@@ -101,20 +102,28 @@ function updatePosition() {
 
 setInterval(updatePosition, 2000);
 
-// ⛳ START HOLE (FIXED)
+// ⛳ START HOLE (NOW VISIBLE + WORKING)
 function startHole() {
   if (!userMarker) return;
 
-  // ONLY set hole if none exists
+  let pos = userMarker.getLatLng();
+
+  // 📍 Place tee marker
+  if (teeMarker) map.removeLayer(teeMarker);
+  teeMarker = L.circleMarker([pos.lat, pos.lng], {
+    radius: 8,
+    color: 'white'
+  }).addTo(map);
+
+  // If no hole yet, set one ahead
   if (!holePosition) {
-    let pos = userMarker.getLatLng();
     holePosition = [pos.lat + 0.0005, pos.lng];
+
+    if (holeMarker) map.removeLayer(holeMarker);
+    holeMarker = L.marker(holePosition).addTo(map);
   }
 
-  if (holeMarker) map.removeLayer(holeMarker);
-  holeMarker = L.marker(holePosition).addTo(map);
-
-  // RESET SHOTS ONLY
+  // 🔄 Reset shots
   shots = [];
 
   if (shotLine) {
@@ -125,11 +134,12 @@ function startHole() {
   shotMarkers.forEach(m => map.removeLayer(m));
   shotMarkers = [];
 
+  // 🔄 Reset score
   score = 0;
   document.getElementById("score").innerText = "Score: 0";
 }
 
-// ADD SHOT
+// ➕ ADD SHOT
 function addShot() {
   if (!userMarker) return;
 
@@ -158,7 +168,7 @@ function addShot() {
   document.getElementById("score").innerText = "Score: " + score;
 }
 
-// 🎯 TAP SETS HOLE (MAIN CONTROL)
+// 🎯 TAP TO SET HOLE
 map.on('click', function(e) {
   holePosition = [e.latlng.lat, e.latlng.lng];
 
