@@ -5,71 +5,108 @@
 
 <title>Eagle AI Caddie</title>
 
-<!-- ✅ APP MODE -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="theme-color" content="#000000">
-
-<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/854/854878.png">
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
-body {margin:0;background:black;color:white;font-family:-apple-system;text-align:center;}
-#map {height:50vh;width:100%;}
-.info {font-size:18px;margin:6px;}
-#score {font-size:28px;margin:8px;}
-#shotsList {font-size:14px;max-height:120px;overflow:auto;margin:10px;}
-#scorecard {font-size:14px;margin:10px;}
-button {width:90%;padding:12px;margin:6px;border:none;border-radius:10px;background:#00c853;color:black;font-size:16px;}
+body {
+  margin:0;
+  background:black;
+  color:white;
+  font-family:-apple-system;
+}
+
+#map {
+  height:55vh;
+  width:100%;
+}
+
+/* UI PANEL */
+.panel {
+  background:#111;
+  padding:15px;
+  border-top-left-radius:20px;
+  border-top-right-radius:20px;
+  margin-top:-20px;
+}
+
+/* BIG DISPLAY */
+.distance {
+  font-size:28px;
+  font-weight:bold;
+}
+
+.club {
+  font-size:22px;
+  margin-bottom:10px;
+}
+
+/* SCORE */
+#score {
+  font-size:26px;
+  margin:10px 0;
+}
+
+/* BUTTONS */
+button {
+  width:100%;
+  padding:14px;
+  margin-top:10px;
+  border:none;
+  border-radius:12px;
+  background:#00c853;
+  color:black;
+  font-size:16px;
+}
+
+/* SHOT HISTORY */
+#shotsList {
+  font-size:14px;
+  max-height:100px;
+  overflow:auto;
+  margin-top:10px;
+}
 </style>
 </head>
 
 <body>
 
-<h2>🏌️ Eagle AI Caddie</h2>
+<h2 style="text-align:center;">🏌️ Eagle AI Caddie</h2>
 
 <div id="map"></div>
 
-<div class="info" id="holeInfo">Hole 1 • Par 4</div>
-<div class="info" id="distance">Distance: --</div>
-<div class="info" id="club">Club: --</div>
+<div class="panel">
 
-<div id="score">Score: 0</div>
-<div class="info" id="totalScore">Total: Even</div>
+  <div class="distance" id="distance">Distance: --</div>
+  <div class="club" id="club">Club: --</div>
 
-<div id="shotsList"></div>
-<div id="scorecard"></div>
+  <div id="score">Score: 0</div>
 
-<button onclick="startHole()">⛳ Start Hole</button>
-<button onclick="nextHole()">➡️ Next Hole</button>
-<button onclick="addShot()">+ Shot</button>
+  <button onclick="startHole()">⛳ Start Hole</button>
+  <button onclick="addShot()">+ Shot</button>
+
+  <div id="shotsList"></div>
+
+</div>
 
 <script>
-// SAME WORKING CODE (unchanged)
+// MAP (Satellite style)
 let map = L.map('map').setView([51.505, -0.09], 15);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+// ⚠️ Using a better-looking tile layer
+L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
   maxZoom: 19
 }).addTo(map);
 
 let userMarker = null;
 let holeMarker = null;
-let teeMarker = null;
 let holePosition = null;
 
-let score = 0;
 let shots = [];
 let shotLine = null;
-let shotMarkers = [];
+let score = 0;
 
-let holeNumber = 1;
-let par = 4;
-
-let totalScore = 0;
-let scoreHistory = [];
-
+// GPS TRACKING
 function updatePosition() {
   navigator.geolocation.getCurrentPosition(function(pos) {
 
@@ -104,62 +141,26 @@ function updatePosition() {
 
 setInterval(updatePosition, 2000);
 
+// START HOLE
 function startHole() {
   if (!userMarker) return;
 
   let pos = userMarker.getLatLng();
 
-  if (teeMarker) map.removeLayer(teeMarker);
-  teeMarker = L.circleMarker([pos.lat, pos.lng], {radius:8,color:'white'}).addTo(map);
-
-  if (!holePosition) {
-    holePosition = [pos.lat + 0.0005, pos.lng];
-  }
+  holePosition = [pos.lat + 0.0005, pos.lng];
 
   if (holeMarker) map.removeLayer(holeMarker);
   holeMarker = L.marker(holePosition).addTo(map);
 
-  resetShots();
-}
-
-function nextHole() {
-  let diff = score - par;
-  totalScore += diff;
-
-  scoreHistory.push("Hole " + holeNumber + ": " + formatScore(diff));
-  updateScorecard();
-
-  holeNumber++;
-
-  let pars = [3,4,4,4,5];
-  par = pars[Math.floor(Math.random()*pars.length)];
-
-  document.getElementById("holeInfo").innerText =
-    "Hole " + holeNumber + " • Par " + par;
-
-  holePosition = null;
-
-  if (holeMarker) map.removeLayer(holeMarker);
-
-  resetShots();
-}
-
-function resetShots() {
+  score = 0;
   shots = [];
+  document.getElementById("score").innerText = "Score: 0";
   document.getElementById("shotsList").innerHTML = "";
 
-  if (shotLine) {
-    map.removeLayer(shotLine);
-    shotLine = null;
-  }
-
-  shotMarkers.forEach(m => map.removeLayer(m));
-  shotMarkers = [];
-
-  score = 0;
-  document.getElementById("score").innerText = "Score: 0";
+  if (shotLine) map.removeLayer(shotLine);
 }
 
+// ADD SHOT
 function addShot() {
   if (!userMarker) return;
 
@@ -168,13 +169,10 @@ function addShot() {
 
   shots.push(point);
 
-  let marker = L.circleMarker(point, {radius:6,color:'yellow'}).addTo(map);
-  shotMarkers.push(marker);
-
   if (shots.length > 1) {
     if (shotLine) map.removeLayer(shotLine);
 
-    shotLine = L.polyline(shots, {color:'yellow',weight:4}).addTo(map);
+    shotLine = L.polyline(shots, {color:'yellow'}).addTo(map);
 
     let prev = shots[shots.length - 2];
     let dist = map.distance(prev, point);
@@ -187,20 +185,7 @@ function addShot() {
   document.getElementById("score").innerText = "Score: " + score;
 }
 
-function formatScore(val) {
-  if (val === 0) return "Even";
-  if (val > 0) return "+" + val;
-  return val;
-}
-
-function updateScorecard() {
-  document.getElementById("scorecard").innerHTML =
-    scoreHistory.join("<br>");
-
-  document.getElementById("totalScore").innerText =
-    "Total: " + formatScore(totalScore);
-}
-
+// SET HOLE BY CLICK
 map.on('click', function(e) {
   holePosition = [e.latlng.lat, e.latlng.lng];
 
