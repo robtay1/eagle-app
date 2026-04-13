@@ -11,7 +11,7 @@
 body {
   margin:0;
   font-family:-apple-system;
-  background:#0b0b0b;
+  background:#0a0f0a;
   color:white;
 }
 
@@ -20,8 +20,13 @@ body {
   display:flex;
   justify-content:space-between;
   padding:12px 16px;
-  background:#121212;
+  background:#0f1a0f;
+  border-bottom:1px solid #1f2f1f;
   font-size:14px;
+}
+
+.topbar span {
+  color:#7fff7f;
 }
 
 /* MAP */
@@ -29,31 +34,46 @@ body {
   height:45vh;
 }
 
-/* CADDIE CARD */
+/* MAIN CARD */
 .card {
   margin:12px;
-  padding:16px;
-  background:#1c1c1c;
-  border-radius:16px;
+  padding:18px;
+  background:#121c12;
+  border-radius:18px;
   text-align:center;
+  border:1px solid #1f3a1f;
 }
 
+/* DISTANCE */
 .distance {
-  font-size:40px;
-  font-weight:bold;
+  font-size:48px;
+  font-weight:700;
+  color:#7CFF8A;
 }
 
+/* CLUB */
 .club {
-  font-size:22px;
+  font-size:26px;
   margin:6px 0;
 }
 
-.advice {
+/* SUB INFO */
+.sub {
   font-size:14px;
-  color:#bbb;
+  color:#9dbb9d;
 }
 
-/* BUTTON BAR */
+/* AI BOX */
+.ai {
+  margin-top:12px;
+  padding:12px;
+  background:#0f1a0f;
+  border-radius:12px;
+  border:1px solid #1f3a1f;
+  font-size:14px;
+}
+
+/* ACTION BAR */
 .actions {
   display:flex;
   gap:10px;
@@ -68,6 +88,7 @@ button {
   background:#00c853;
   color:black;
   font-size:16px;
+  font-weight:bold;
 }
 </style>
 </head>
@@ -76,7 +97,7 @@ button {
 
 <div class="topbar">
   <div>Hole 1 • Par 4</div>
-  <div>Wind: —</div>
+  <div><span>Wind:</span> —</div>
 </div>
 
 <div id="map"></div>
@@ -84,7 +105,11 @@ button {
 <div class="card">
   <div class="distance" id="distance">--</div>
   <div class="club" id="club">--</div>
-  <div class="advice" id="advice">Tap map to set hole</div>
+  <div class="sub" id="sub">Front -- | Back --</div>
+
+  <div class="ai" id="aiBox">
+    AI Caddie ready
+  </div>
 </div>
 
 <div class="actions">
@@ -116,6 +141,7 @@ function updatePosition() {
     }
 
     if (holePosition) {
+
       let d = Math.round(map.distance([lat,lng], holePosition));
 
       document.getElementById("distance").innerText = d + " m";
@@ -127,8 +153,16 @@ function updatePosition() {
 
       document.getElementById("club").innerText = club;
 
-      document.getElementById("advice").innerText =
-        d < 120 ? "Controlled shot" : "Full swing";
+      let front = d - 10;
+      let back = d + 10;
+
+      document.getElementById("sub").innerText =
+        "Front " + front + "m | Back " + back + "m";
+
+      document.getElementById("aiBox").innerHTML =
+        "<b>" + club + "</b><br>" +
+        "Play " + d + "m<br>" +
+        (d < 120 ? "Controlled shot" : "Full swing");
 
       map.fitBounds([[lat,lng], holePosition], {padding:[40,40]});
     }
