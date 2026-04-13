@@ -11,110 +11,89 @@
 body {
   margin:0;
   font-family:-apple-system;
-  background:#0a0f0a;
+  background:#071007;
   color:white;
-}
-
-/* TOP BAR */
-.topbar {
-  display:flex;
-  justify-content:space-between;
-  padding:12px 16px;
-  background:#0f1a0f;
-  border-bottom:1px solid #1f2f1f;
-  font-size:14px;
-}
-
-.topbar span {
-  color:#7fff7f;
 }
 
 /* MAP */
 #map {
-  height:45vh;
+  height:52vh;
 }
 
-/* MAIN CARD */
-.card {
-  margin:12px;
-  padding:18px;
-  background:#121c12;
-  border-radius:18px;
-  text-align:center;
-  border:1px solid #1f3a1f;
+/* MAIN WRAP (IMPORTANT CHANGE) */
+.wrap {
+  position:fixed;
+  bottom:0;
+  width:100%;
+  padding:14px;
+  background:linear-gradient(to top, #061006, #0b1a0b);
+  border-top-left-radius:22px;
+  border-top-right-radius:22px;
 }
 
-/* DISTANCE */
+/* HERO DISTANCE (NOW MUCH STRONGER) */
 .distance {
-  font-size:48px;
-  font-weight:700;
+  font-size:56px;
+  font-weight:800;
   color:#7CFF8A;
+  text-align:center;
+  margin-top:6px;
 }
 
 /* CLUB */
 .club {
   font-size:26px;
-  margin:6px 0;
+  text-align:center;
+  margin-top:-6px;
+  color:#d8ffd8;
 }
 
-/* SUB INFO */
-.sub {
-  font-size:14px;
-  color:#9dbb9d;
-}
-
-/* AI BOX */
+/* AI (SIMPLIFIED) */
 .ai {
-  margin-top:12px;
-  padding:12px;
-  background:#0f1a0f;
-  border-radius:12px;
-  border:1px solid #1f3a1f;
-  font-size:14px;
+  margin-top:10px;
+  text-align:center;
+  font-size:15px;
+  color:#b7d9b7;
 }
 
-/* ACTION BAR */
-.actions {
+/* BUTTONS */
+.buttons {
   display:flex;
   gap:10px;
-  padding:12px;
+  margin-top:12px;
 }
 
 button {
   flex:1;
   padding:14px;
   border:none;
-  border-radius:12px;
+  border-radius:14px;
   background:#00c853;
   color:black;
   font-size:16px;
-  font-weight:bold;
+  font-weight:700;
 }
 </style>
 </head>
 
 <body>
 
-<div class="topbar">
-  <div>Hole 1 • Par 4</div>
-  <div><span>Wind:</span> —</div>
-</div>
-
 <div id="map"></div>
 
-<div class="card">
+<div class="wrap">
+
   <div class="distance" id="distance">--</div>
   <div class="club" id="club">--</div>
-  <div class="sub" id="sub">Front -- | Back --</div>
 
   <div class="ai" id="aiBox">
-    AI Caddie ready
+    Set a pin to begin
   </div>
-</div>
 
-<div class="actions">
-  <button onclick="startHole()">⛳ Start</button>
-  <button onclick="addShot()">+ Shot</button>
+  <div class="buttons">
+    <button onclick="startHole()">⛳ Start</button>
+    <button onclick="addShot()">+ Shot</button>
+  </div>
+
 </div>
 
 <script>
@@ -127,6 +106,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
 let userMarker, holeMarker;
 let holePosition = null;
 
+// GPS
 function updatePosition() {
   navigator.geolocation.getCurrentPosition(function(pos) {
 
@@ -153,25 +133,18 @@ function updatePosition() {
 
       document.getElementById("club").innerText = club;
 
-      let front = d - 10;
-      let back = d + 10;
-
-      document.getElementById("sub").innerText =
-        "Front " + front + "m | Back " + back + "m";
-
+      // 🔥 SIMPLIFIED CADDIE (MORE LIKE YOUR CONCEPT)
       document.getElementById("aiBox").innerHTML =
-        "<b>" + club + "</b><br>" +
-        "Play " + d + "m<br>" +
-        (d < 120 ? "Controlled shot" : "Full swing");
-
-      map.fitBounds([[lat,lng], holePosition], {padding:[40,40]});
+        "Use <b>" + club + "</b> • " +
+        d + "m to pin";
     }
 
   });
 }
 
-setInterval(updatePosition,2000);
+setInterval(updatePosition, 2000);
 
+// START HOLE
 function startHole() {
   if (!userMarker) return;
 
@@ -183,8 +156,12 @@ function startHole() {
   holeMarker = L.marker(holePosition).addTo(map);
 }
 
-function addShot() {}
+// SHOT (placeholder for now)
+function addShot() {
+  alert("Shot tracked");
+}
 
+// TAP TO SET PIN
 map.on('click', function(e){
   holePosition = [e.latlng.lat, e.latlng.lng];
 
