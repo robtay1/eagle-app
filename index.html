@@ -17,15 +17,26 @@ body {margin:0;font-family:-apple-system;background:black;color:white;}
   z-index:1;
 }
 
+/* TOP BAR */
+.topbar {
+  position:absolute;
+  top:0;
+  width:100%;
+  display:flex;
+  justify-content:space-between;
+  padding:10px 16px;
+  background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(10px);
+  z-index:1000;
+  font-size:14px;
+}
+
+/* HUD */
 .hud {
   position:absolute;
-  top:20px;
+  top:50px;
   left:50%;
   transform:translateX(-50%);
-  background:rgba(0,0,0,0.5);
-  backdrop-filter:blur(14px);
-  padding:14px 22px;
-  border-radius:22px;
   text-align:center;
   z-index:1000;
 }
@@ -40,20 +51,26 @@ body {margin:0;font-family:-apple-system;background:black;color:white;}
   font-size:18px;
 }
 
+/* EXTRA DATA */
+.extra {
+  font-size:14px;
+  color:#c8ffc8;
+}
+
+/* PANEL */
 .panel {
   position:absolute;
   bottom:0;
   width:100%;
   padding:16px;
   background:linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.4));
-  backdrop-filter:blur(20px);
-  border-radius:24px 24px 0 0;
   z-index:1000;
 }
 
 .ai {
   text-align:center;
   margin-bottom:12px;
+  font-size:16px;
 }
 
 .buttons {
@@ -77,13 +94,22 @@ button {
 
 <div id="map"></div>
 
+<!-- TOP INFO -->
+<div class="topbar">
+  <div>Hole 1 • Par 4</div>
+  <div id="wind">Wind: 5 mph →</div>
+</div>
+
+<!-- MAIN HUD -->
 <div class="hud">
   <div class="distance" id="distance">--</div>
   <div class="club" id="club">--</div>
+  <div class="extra" id="extra">Front -- | Back --</div>
 </div>
 
+<!-- BOTTOM -->
 <div class="panel">
-  <div class="ai" id="aiBox">Tap map to set pin</div>
+  <div class="ai" id="aiBox">Set pin to begin</div>
 
   <div class="buttons">
     <button onclick="startHole()">⛳ Start</button>
@@ -94,22 +120,20 @@ button {
 <script>
 let map = L.map('map');
 
-// 🛰️ SATELLITE MAP (THIS IS THE UPGRADE)
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
   maxZoom: 19
 }).addTo(map);
-
-// OPTIONAL: try this satellite instead (uncomment to test)
-/*
-L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-  maxZoom: 17
-}).addTo(map);
-*/
 
 let userMarker, holeMarker;
 let holePosition = null;
 
 let pinLine = null;
+
+// FAKE WIND (for now)
+function getWind() {
+  let speed = Math.floor(Math.random()*10)+3;
+  return speed + " mph →";
+}
 
 // GPS
 function updatePosition() {
@@ -120,25 +144,41 @@ function updatePosition() {
 
     if (!userMarker) {
       userMarker = L.marker([lat,lng]).addTo(map);
-      map.setView([lat,lng],18);
+      map.setView([lat,lng],17);
     } else {
       userMarker.setLatLng([lat,lng]);
     }
 
     if (holePosition) {
+
       let d = Math.round(map.distance([lat,lng], holePosition));
 
       document.getElementById("distance").innerText = d + " m";
 
       let club = "Driver";
-      if (d < 200) club = "Iron";
+      if (d < 200) club = "7 Iron";
+      if (d < 140) club = "9 Iron";
       if (d < 100) club = "Wedge";
       if (d < 20) club = "Putter";
 
       document.getElementById("club").innerText = club;
 
+      let front = d - 10;
+      let back = d + 10;
+
+      document.getElementById("extra").innerText =
+        "Front " + front + "m | Back " + back + "m";
+
+      document.getElementById("wind").innerText =
+        "Wind: " + getWind();
+
+      // 🧠 SMARTER CADDIE
+      let advice = "Aim center";
+      if (d > 150) advice = "Full swing, aim slightly right";
+      if (d < 120) advice = "Controlled shot";
+
       document.getElementById("aiBox").innerHTML =
-        "📍 " + d + "m • Use <b>" + club + "</b>";
+        d + "m • " + club + "<br>" + advice;
 
       if (pinLine) map.removeLayer(pinLine);
       pinLine = L.polyline([[lat,lng], holePosition], {
@@ -154,7 +194,6 @@ function updatePosition() {
 
 setInterval(updatePosition, 2000);
 
-// START HOLE
 function startHole() {
   if (!userMarker) return;
 
@@ -166,10 +205,8 @@ function startHole() {
   holeMarker = L.marker(holePosition).addTo(map);
 }
 
-// SHOT
 function addShot() {}
 
-// SET PIN
 map.on('click', function(e){
   holePosition = [e.latlng.lat, e.latlng.lng];
 
