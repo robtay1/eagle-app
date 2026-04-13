@@ -8,8 +8,14 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
-body {margin:0;font-family:-apple-system;background:black;color:white;}
+body {
+  margin:0;
+  font-family:-apple-system;
+  background:black;
+  color:white;
+}
 
+/* MAP */
 #map {
   position:absolute;
   height:100vh;
@@ -20,67 +26,74 @@ body {margin:0;font-family:-apple-system;background:black;color:white;}
 /* TOP BAR */
 .topbar {
   position:absolute;
-  top:0;
-  width:100%;
+  top:10px;
+  left:10px;
+  right:10px;
   display:flex;
   justify-content:space-between;
-  padding:10px 16px;
+  padding:10px 14px;
   background:rgba(0,0,0,0.6);
   backdrop-filter:blur(10px);
+  border-radius:14px;
   z-index:1000;
   font-size:14px;
 }
 
-/* HUD */
-.hud {
+/* CENTER CARD (HERO) */
+.hero {
   position:absolute;
-  top:50px;
+  top:90px;
   left:50%;
   transform:translateX(-50%);
+  background:rgba(0,0,0,0.65);
+  backdrop-filter:blur(14px);
+  padding:20px 30px;
+  border-radius:20px;
   text-align:center;
+  box-shadow:0 8px 30px rgba(0,0,0,0.6);
   z-index:1000;
 }
 
 .distance {
-  font-size:52px;
+  font-size:56px;
   font-weight:800;
   color:#7CFF8A;
 }
 
 .club {
-  font-size:18px;
+  font-size:20px;
+  margin-top:6px;
 }
 
-/* EXTRA DATA */
-.extra {
-  font-size:14px;
-  color:#c8ffc8;
-}
-
-/* PANEL */
-.panel {
+/* CADDIE CARD */
+.caddie {
   position:absolute;
-  bottom:0;
-  width:100%;
-  padding:16px;
-  background:linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.4));
+  bottom:110px;
+  left:10px;
+  right:10px;
+  background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(14px);
+  padding:14px;
+  border-radius:16px;
+  text-align:center;
+  font-size:15px;
   z-index:1000;
 }
 
-.ai {
-  text-align:center;
-  margin-bottom:12px;
-  font-size:16px;
-}
-
+/* BUTTON BAR */
 .buttons {
+  position:absolute;
+  bottom:20px;
+  left:10px;
+  right:10px;
   display:flex;
   gap:10px;
+  z-index:1000;
 }
 
 button {
   flex:1;
-  padding:15px;
+  padding:14px;
   border:none;
   border-radius:14px;
   background:#00c853;
@@ -94,27 +107,23 @@ button {
 
 <div id="map"></div>
 
-<!-- TOP INFO -->
 <div class="topbar">
   <div>Hole 1 • Par 4</div>
   <div id="wind">Wind: 5 mph →</div>
 </div>
 
-<!-- MAIN HUD -->
-<div class="hud">
+<div class="hero">
   <div class="distance" id="distance">--</div>
   <div class="club" id="club">--</div>
-  <div class="extra" id="extra">Front -- | Back --</div>
 </div>
 
-<!-- BOTTOM -->
-<div class="panel">
-  <div class="ai" id="aiBox">Set pin to begin</div>
+<div class="caddie" id="aiBox">
+  Set pin to begin
+</div>
 
-  <div class="buttons">
-    <button onclick="startHole()">⛳ Start</button>
-    <button onclick="addShot()">🏌️ Shot</button>
-  </div>
+<div class="buttons">
+  <button onclick="startHole()">⛳ Start</button>
+  <button onclick="addShot()">🏌️ Shot</button>
 </div>
 
 <script>
@@ -127,15 +136,11 @@ L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
 let userMarker, holeMarker;
 let holePosition = null;
 
-let pinLine = null;
-
-// FAKE WIND (for now)
 function getWind() {
   let speed = Math.floor(Math.random()*10)+3;
   return speed + " mph →";
 }
 
-// GPS
 function updatePosition() {
   navigator.geolocation.getCurrentPosition(function(pos) {
 
@@ -163,28 +168,11 @@ function updatePosition() {
 
       document.getElementById("club").innerText = club;
 
-      let front = d - 10;
-      let back = d + 10;
-
-      document.getElementById("extra").innerText =
-        "Front " + front + "m | Back " + back + "m";
-
       document.getElementById("wind").innerText =
         "Wind: " + getWind();
 
-      // 🧠 SMARTER CADDIE
-      let advice = "Aim center";
-      if (d > 150) advice = "Full swing, aim slightly right";
-      if (d < 120) advice = "Controlled shot";
-
       document.getElementById("aiBox").innerHTML =
-        d + "m • " + club + "<br>" + advice;
-
-      if (pinLine) map.removeLayer(pinLine);
-      pinLine = L.polyline([[lat,lng], holePosition], {
-        color:'white',
-        dashArray:'5,10'
-      }).addTo(map);
+        d + "m • " + club + "<br>Aim centre";
 
       map.fitBounds([[lat,lng], holePosition], {padding:[60,60]});
     }
