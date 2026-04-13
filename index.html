@@ -2,7 +2,6 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <title>Eagle AI Caddie</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
@@ -11,64 +10,59 @@
 <style>
 body {
   margin:0;
-  background:black;
   font-family:-apple-system;
+  background:#0b0b0b;
   color:white;
+}
+
+/* TOP BAR */
+.topbar {
+  display:flex;
+  justify-content:space-between;
+  padding:12px 16px;
+  background:#121212;
+  font-size:14px;
 }
 
 /* MAP */
 #map {
-  height:100vh;
-  width:100%;
+  height:45vh;
 }
 
-/* TOP HUD */
-.hud {
-  position:absolute;
-  top:20px;
-  left:50%;
-  transform:translateX(-50%);
-  background:rgba(0,0,0,0.5);
-  backdrop-filter:blur(12px);
-  padding:12px 20px;
-  border-radius:20px;
+/* CADDIE CARD */
+.card {
+  margin:12px;
+  padding:16px;
+  background:#1c1c1c;
+  border-radius:16px;
   text-align:center;
 }
 
 .distance {
-  font-size:34px;
+  font-size:40px;
   font-weight:bold;
 }
 
 .club {
-  font-size:18px;
+  font-size:22px;
+  margin:6px 0;
 }
 
-/* BOTTOM PANEL */
-.panel {
-  position:absolute;
-  bottom:0;
-  width:100%;
-  background:rgba(0,0,0,0.6);
-  backdrop-filter:blur(15px);
-  padding:15px;
-  border-radius:20px 20px 0 0;
-}
-
-/* AI BOX */
-.ai {
-  background:rgba(255,255,255,0.05);
-  padding:12px;
-  border-radius:12px;
-  margin-bottom:10px;
+.advice {
   font-size:14px;
+  color:#bbb;
 }
 
-/* BUTTONS */
+/* BUTTON BAR */
+.actions {
+  display:flex;
+  gap:10px;
+  padding:12px;
+}
+
 button {
-  width:100%;
+  flex:1;
   padding:14px;
-  margin-top:8px;
   border:none;
   border-radius:12px;
   background:#00c853;
@@ -80,24 +74,22 @@ button {
 
 <body>
 
-<div id="map"></div>
-
-<!-- TOP DISPLAY -->
-<div class="hud">
-  <div class="distance" id="distance">--</div>
-  <div class="club" id="club">--</div>
+<div class="topbar">
+  <div>Hole 1 • Par 4</div>
+  <div>Wind: —</div>
 </div>
 
-<!-- BOTTOM PANEL -->
-<div class="panel">
+<div id="map"></div>
 
-  <div class="ai" id="aiBox">
-    AI Caddie:<br>Ready
-  </div>
+<div class="card">
+  <div class="distance" id="distance">--</div>
+  <div class="club" id="club">--</div>
+  <div class="advice" id="advice">Tap map to set hole</div>
+</div>
 
-  <button onclick="startHole()">⛳ Start Hole</button>
+<div class="actions">
+  <button onclick="startHole()">⛳ Start</button>
   <button onclick="addShot()">+ Shot</button>
-
 </div>
 
 <script>
@@ -110,14 +102,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
 let userMarker, holeMarker;
 let holePosition = null;
 
-let shots = [];
-let shotLine = null;
-let shotMarkers = [];
-
-let pinLine = null;
-let rings = [];
-
-// GPS
 function updatePosition() {
   navigator.geolocation.getCurrentPosition(function(pos) {
 
@@ -125,46 +109,35 @@ function updatePosition() {
     let lng = pos.coords.longitude;
 
     if (!userMarker) {
-      userMarker = L.marker([lat, lng]).addTo(map);
+      userMarker = L.marker([lat,lng]).addTo(map);
+      map.setView([lat,lng],17);
     } else {
-      userMarker.setLatLng([lat, lng]);
+      userMarker.setLatLng([lat,lng]);
     }
 
     if (holePosition) {
-
-      let bounds = L.latLngBounds([lat, lng], holePosition);
-      map.fitBounds(bounds, {padding:[80,80]});
-
-      let distance = map.distance([lat, lng], holePosition);
-      let d = Math.round(distance);
+      let d = Math.round(map.distance([lat,lng], holePosition));
 
       document.getElementById("distance").innerText = d + " m";
 
       let club = "Driver";
-      if (distance < 200) club = "Iron";
-      if (distance < 100) club = "Wedge";
-      if (distance < 20) club = "Putter";
+      if (d < 200) club = "Iron";
+      if (d < 100) club = "Wedge";
+      if (d < 20) club = "Putter";
 
       document.getElementById("club").innerText = club;
 
-      document.getElementById("aiBox").innerHTML =
-        "<b>" + club + "</b><br>" +
-        "Play " + d + "m<br>" +
-        (d < 120 ? "Controlled swing" : "Full swing");
+      document.getElementById("advice").innerText =
+        d < 120 ? "Controlled shot" : "Full swing";
 
-      if (pinLine) map.removeLayer(pinLine);
-      pinLine = L.polyline([[lat,lng], holePosition], {
-        color:'white',
-        dashArray:'5,10'
-      }).addTo(map);
+      map.fitBounds([[lat,lng], holePosition], {padding:[40,40]});
     }
 
   });
 }
 
-setInterval(updatePosition, 2000);
+setInterval(updatePosition,2000);
 
-// START HOLE
 function startHole() {
   if (!userMarker) return;
 
@@ -174,54 +147,11 @@ function startHole() {
 
   if (holeMarker) map.removeLayer(holeMarker);
   holeMarker = L.marker(holePosition).addTo(map);
-
-  shots = [];
-  if (shotLine) map.removeLayer(shotLine);
-  shotMarkers.forEach(m => map.removeLayer(m));
-  shotMarkers = [];
-
-  rings.forEach(r => map.removeLayer(r));
-  rings = [];
-
-  [50,100,150].forEach(r => {
-    let circle = L.circle(holePosition, {
-      radius: r,
-      color: 'white',
-      fill:false,
-      opacity:0.3
-    }).addTo(map);
-    rings.push(circle);
-  });
 }
 
-// SHOTS
-function addShot() {
-  if (!userMarker) return;
+function addShot() {}
 
-  let pos = userMarker.getLatLng();
-  let point = [pos.lat, pos.lng];
-
-  shots.push(point);
-
-  let dot = L.circleMarker(point, {
-    radius:6,
-    color:'yellow'
-  }).addTo(map);
-
-  shotMarkers.push(dot);
-
-  if (shots.length > 1) {
-    if (shotLine) map.removeLayer(shotLine);
-
-    shotLine = L.polyline(shots, {
-      color:'yellow',
-      weight:4
-    }).addTo(map);
-  }
-}
-
-// SET PIN
-map.on('click', function(e) {
+map.on('click', function(e){
   holePosition = [e.latlng.lat, e.latlng.lng];
 
   if (holeMarker) map.removeLayer(holeMarker);
