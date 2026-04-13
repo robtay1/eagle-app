@@ -13,42 +13,27 @@ body {margin:0;background:black;color:white;font-family:-apple-system;}
 
 #map {height:60vh;width:100%;}
 
-/* GLASS PANEL */
 .panel {
   position:fixed;
   bottom:0;
   width:100%;
   background:rgba(0,0,0,0.9);
-  backdrop-filter: blur(10px);
   padding:15px;
   border-top-left-radius:20px;
   border-top-right-radius:20px;
 }
 
-/* BIG DISTANCE */
 .distance {
   text-align:center;
   font-size:36px;
   font-weight:bold;
 }
 
-/* CLUB DISPLAY */
 .club {
   text-align:center;
   font-size:24px;
-  margin-bottom:10px;
 }
 
-/* AI BOX */
-.aiBox {
-  background:#1c1c1c;
-  padding:10px;
-  border-radius:12px;
-  margin-top:10px;
-  text-align:left;
-}
-
-/* BUTTONS */
 button {
   width:100%;
   padding:14px;
@@ -69,18 +54,11 @@ button {
 <div id="map"></div>
 
 <div class="panel">
-
   <div class="distance" id="distance">--</div>
   <div class="club" id="club">--</div>
 
-  <div class="aiBox" id="ai">
-    AI Caddie:<br>
-    Waiting for data...
-  </div>
-
   <button onclick="startHole()">⛳ Start Hole</button>
   <button onclick="addShot()">+ Shot</button>
-
 </div>
 
 <script>
@@ -93,15 +71,18 @@ L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
 let userMarker, holeMarker;
 let holePosition = null;
 
-// 🎯 DISTANCE RING
-let ring = null;
+let shots = [];
+let shotLine = null;
+let pinLine = null;
 
+// 📍 LIVE GPS TRACKING
 function updatePosition() {
   navigator.geolocation.getCurrentPosition(function(pos) {
 
     let lat = pos.coords.latitude;
     let lng = pos.coords.longitude;
 
+    // 🔥 AUTO FOLLOW USER
     map.setView([lat, lng], 17);
 
     if (!userMarker) {
@@ -111,11 +92,10 @@ function updatePosition() {
     }
 
     if (holePosition) {
-
       let distance = map.distance([lat, lng], holePosition);
-      let distRounded = Math.round(distance);
+      let d = Math.round(distance);
 
-      document.getElementById("distance").innerText = distRounded + " m";
+      document.getElementById("distance").innerText = d + " m";
 
       let club = "Driver";
       if (distance < 200) club = "Iron";
@@ -124,19 +104,12 @@ function updatePosition() {
 
       document.getElementById("club").innerText = club;
 
-      // AI BOX UPDATE
-      document.getElementById("ai").innerHTML =
-        "<b>" + club + "</b><br>" +
-        distRounded + "m to pin<br>" +
-        "Aim centre<br>" +
-        "Smooth swing";
+      // 🎯 DRAW LINE TO PIN
+      if (pinLine) map.removeLayer(pinLine);
 
-      // 🎯 DRAW RING
-      if (ring) map.removeLayer(ring);
-      ring = L.circle(holePosition, {
-        radius: distance,
-        color: 'white',
-        fill:false
+      pinLine = L.polyline([[lat,lng], holePosition], {
+        color:'white',
+        dashArray:'5,10'
       }).addTo(map);
     }
 
@@ -145,6 +118,7 @@ function updatePosition() {
 
 setInterval(updatePosition, 2000);
 
+// ⛳ START HOLE
 function startHole() {
   if (!userMarker) return;
 
@@ -154,10 +128,29 @@ function startHole() {
 
   if (holeMarker) map.removeLayer(holeMarker);
   holeMarker = L.marker(holePosition).addTo(map);
+
+  shots = [];
+
+  if (shotLine) map.removeLayer(shotLine);
 }
 
+// 🏌️ ADD SHOT
 function addShot() {
-  alert("Shot tracked (next step = visual lines)");
+  if (!userMarker) return;
+
+  let pos = userMarker.getLatLng();
+  let point = [pos.lat, pos.lng];
+
+  shots.push(point);
+
+  if (shots.length > 1) {
+    if (shotLine) map.removeLayer(shotLine);
+
+    shotLine = L.polyline(shots, {
+      color:'yellow',
+      weight:4
+    }).addTo(map);
+  }
 }
 
 // 📍 SET PIN MANUALLY
