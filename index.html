@@ -8,24 +8,15 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
-body {
-  margin:0;
-  font-family:-apple-system;
-  background:black;
-  color:white;
-}
+body {margin:0;font-family:-apple-system;background:black;color:white;}
 
-/* MAP */
 #map {
   position:absolute;
-  top:0;
-  left:0;
   height:100vh;
   width:100%;
   z-index:1;
 }
 
-/* TOP HUD */
 .hud {
   position:absolute;
   top:20px;
@@ -36,7 +27,6 @@ body {
   padding:14px 22px;
   border-radius:22px;
   text-align:center;
-  box-shadow:0 4px 20px rgba(0,0,0,0.6);
   z-index:1000;
 }
 
@@ -51,17 +41,14 @@ body {
   color:#d8ffd8;
 }
 
-/* BOTTOM PANEL */
 .panel {
   position:absolute;
   bottom:0;
-  left:0;
   width:100%;
   padding:16px;
   background:linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.4));
   backdrop-filter:blur(20px);
-  border-top-left-radius:24px;
-  border-top-right-radius:24px;
+  border-radius:24px 24px 0 0;
   z-index:1000;
 }
 
@@ -72,7 +59,6 @@ body {
   margin-bottom:12px;
 }
 
-/* BUTTONS */
 .buttons {
   display:flex;
   gap:10px;
@@ -95,13 +81,11 @@ button {
 
 <div id="map"></div>
 
-<!-- TOP HUD -->
 <div class="hud">
   <div class="distance" id="distance">--</div>
   <div class="club" id="club">--</div>
 </div>
 
-<!-- BOTTOM PANEL -->
 <div class="panel">
   <div class="ai" id="aiBox">Tap map to set pin</div>
 
@@ -121,7 +105,12 @@ L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
 let userMarker, holeMarker;
 let holePosition = null;
 
-// GPS UPDATE
+let pinLine = null;
+let rings = [];
+let shots = [];
+let shotLine = null;
+
+// GPS
 function updatePosition() {
   navigator.geolocation.getCurrentPosition(function(pos) {
 
@@ -136,6 +125,7 @@ function updatePosition() {
     }
 
     if (holePosition) {
+
       let d = Math.round(map.distance([lat,lng], holePosition));
 
       document.getElementById("distance").innerText = d + " m";
@@ -149,6 +139,16 @@ function updatePosition() {
 
       document.getElementById("aiBox").innerHTML =
         "📍 " + d + "m • Use <b>" + club + "</b>";
+
+      // LINE TO PIN
+      if (pinLine) map.removeLayer(pinLine);
+      pinLine = L.polyline([[lat,lng], holePosition], {
+        color:'white',
+        dashArray:'5,10'
+      }).addTo(map);
+
+      // AUTO FRAME
+      map.fitBounds([[lat,lng], holePosition], {padding:[60,60]});
     }
 
   });
@@ -166,14 +166,46 @@ function startHole() {
 
   if (holeMarker) map.removeLayer(holeMarker);
   holeMarker = L.marker(holePosition).addTo(map);
+
+  // CLEAR
+  shots = [];
+  if (shotLine) map.removeLayer(shotLine);
+
+  rings.forEach(r => map.removeLayer(r));
+  rings = [];
+
+  // 🎯 RINGS
+  [50,100,150].forEach(r => {
+    let circle = L.circle(holePosition, {
+      radius:r,
+      color:'white',
+      opacity:0.3,
+      fill:false
+    }).addTo(map);
+    rings.push(circle);
+  });
 }
 
-// SHOT
+// SHOT TRACKING
 function addShot() {
-  alert("Shot tracked");
+  if (!userMarker) return;
+
+  let pos = userMarker.getLatLng();
+  let point = [pos.lat, pos.lng];
+
+  shots.push(point);
+
+  if (shots.length > 1) {
+    if (shotLine) map.removeLayer(shotLine);
+
+    shotLine = L.polyline(shots, {
+      color:'yellow',
+      weight:4
+    }).addTo(map);
+  }
 }
 
-// TAP TO SET PIN
+// SET PIN
 map.on('click', function(e){
   holePosition = [e.latlng.lat, e.latlng.lng];
 
