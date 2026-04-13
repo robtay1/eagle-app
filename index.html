@@ -19,8 +19,7 @@ body {margin:0;background:black;color:white;font-family:-apple-system;}
   width:100%;
   background:rgba(0,0,0,0.9);
   padding:15px;
-  border-top-left-radius:20px;
-  border-top-right-radius:20px;
+  border-radius:20px 20px 0 0;
 }
 
 .distance {
@@ -31,7 +30,14 @@ body {margin:0;background:black;color:white;font-family:-apple-system;}
 
 .club {
   text-align:center;
-  font-size:24px;
+  font-size:22px;
+}
+
+.ai {
+  background:#1c1c1c;
+  margin-top:10px;
+  padding:10px;
+  border-radius:10px;
 }
 
 button {
@@ -57,6 +63,10 @@ button {
   <div class="distance" id="distance">--</div>
   <div class="club" id="club">--</div>
 
+  <div class="ai" id="aiBox">
+    AI Caddie:<br>Waiting...
+  </div>
+
   <button onclick="startHole()">⛳ Start Hole</button>
   <button onclick="addShot()">+ Shot</button>
 </div>
@@ -73,16 +83,18 @@ let holePosition = null;
 
 let shots = [];
 let shotLine = null;
-let pinLine = null;
+let shotMarkers = [];
 
-// 📍 LIVE GPS TRACKING
+let pinLine = null;
+let rings = [];
+
+// 📍 GPS
 function updatePosition() {
   navigator.geolocation.getCurrentPosition(function(pos) {
 
     let lat = pos.coords.latitude;
     let lng = pos.coords.longitude;
 
-    // 🔥 AUTO FOLLOW USER
     map.setView([lat, lng], 17);
 
     if (!userMarker) {
@@ -104,9 +116,12 @@ function updatePosition() {
 
       document.getElementById("club").innerText = club;
 
-      // 🎯 DRAW LINE TO PIN
-      if (pinLine) map.removeLayer(pinLine);
+      document.getElementById("aiBox").innerHTML =
+        "<b>" + club + "</b><br>" +
+        d + "m to pin<br>Aim straight<br>Smooth swing";
 
+      // PIN LINE
+      if (pinLine) map.removeLayer(pinLine);
       pinLine = L.polyline([[lat,lng], holePosition], {
         color:'white',
         dashArray:'5,10'
@@ -129,9 +144,25 @@ function startHole() {
   if (holeMarker) map.removeLayer(holeMarker);
   holeMarker = L.marker(holePosition).addTo(map);
 
+  // CLEAR SHOTS
   shots = [];
-
   if (shotLine) map.removeLayer(shotLine);
+  shotMarkers.forEach(m => map.removeLayer(m));
+  shotMarkers = [];
+
+  // 🎯 RINGS
+  rings.forEach(r => map.removeLayer(r));
+  rings = [];
+
+  [50,100,150].forEach(r => {
+    let circle = L.circle(holePosition, {
+      radius: r,
+      color: 'white',
+      fill:false,
+      opacity:0.3
+    }).addTo(map);
+    rings.push(circle);
+  });
 }
 
 // 🏌️ ADD SHOT
@@ -143,6 +174,13 @@ function addShot() {
 
   shots.push(point);
 
+  let dot = L.circleMarker(point, {
+    radius:6,
+    color:'yellow'
+  }).addTo(map);
+
+  shotMarkers.push(dot);
+
   if (shots.length > 1) {
     if (shotLine) map.removeLayer(shotLine);
 
@@ -153,7 +191,7 @@ function addShot() {
   }
 }
 
-// 📍 SET PIN MANUALLY
+// 📍 TAP TO SET PIN
 map.on('click', function(e) {
   holePosition = [e.latlng.lat, e.latlng.lng];
 
