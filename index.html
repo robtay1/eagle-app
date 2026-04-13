@@ -28,6 +28,12 @@ body {margin:0;background:black;color:white;font-family:-apple-system;}
   font-weight:bold;
 }
 
+.subDistances {
+  text-align:center;
+  font-size:14px;
+  margin-top:5px;
+}
+
 .club {
   text-align:center;
   font-size:22px;
@@ -61,6 +67,11 @@ button {
 
 <div class="panel">
   <div class="distance" id="distance">--</div>
+
+  <div class="subDistances" id="subDist">
+    Front: -- | Back: --
+  </div>
+
   <div class="club" id="club">--</div>
 
   <div class="ai" id="aiBox">
@@ -72,7 +83,7 @@ button {
 </div>
 
 <script>
-let map = L.map('map').setView([51.505, -0.09], 15);
+let map = L.map('map');
 
 L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
   maxZoom: 19
@@ -95,8 +106,6 @@ function updatePosition() {
     let lat = pos.coords.latitude;
     let lng = pos.coords.longitude;
 
-    map.setView([lat, lng], 17);
-
     if (!userMarker) {
       userMarker = L.marker([lat, lng]).addTo(map);
     } else {
@@ -104,10 +113,22 @@ function updatePosition() {
     }
 
     if (holePosition) {
+
+      // 🎯 Fit map to show both
+      let bounds = L.latLngBounds([lat, lng], holePosition);
+      map.fitBounds(bounds, {padding:[50,50]});
+
       let distance = map.distance([lat, lng], holePosition);
       let d = Math.round(distance);
 
       document.getElementById("distance").innerText = d + " m";
+
+      // 📍 FRONT / BACK (simulated)
+      let front = Math.round(d - 10);
+      let back = Math.round(d + 10);
+
+      document.getElementById("subDist").innerText =
+        "Front: " + front + "m | Back: " + back + "m";
 
       let club = "Driver";
       if (distance < 200) club = "Iron";
@@ -118,9 +139,10 @@ function updatePosition() {
 
       document.getElementById("aiBox").innerHTML =
         "<b>" + club + "</b><br>" +
-        d + "m to pin<br>Aim straight<br>Smooth swing";
+        "Play " + d + "m shot<br>" +
+        (d < 120 ? "Controlled swing" : "Full swing");
 
-      // PIN LINE
+      // LINE
       if (pinLine) map.removeLayer(pinLine);
       pinLine = L.polyline([[lat,lng], holePosition], {
         color:'white',
@@ -144,13 +166,13 @@ function startHole() {
   if (holeMarker) map.removeLayer(holeMarker);
   holeMarker = L.marker(holePosition).addTo(map);
 
-  // CLEAR SHOTS
+  // RESET SHOTS
   shots = [];
   if (shotLine) map.removeLayer(shotLine);
   shotMarkers.forEach(m => map.removeLayer(m));
   shotMarkers = [];
 
-  // 🎯 RINGS
+  // RINGS
   rings.forEach(r => map.removeLayer(r));
   rings = [];
 
@@ -165,7 +187,7 @@ function startHole() {
   });
 }
 
-// 🏌️ ADD SHOT
+// 🏌️ SHOTS
 function addShot() {
   if (!userMarker) return;
 
@@ -191,7 +213,7 @@ function addShot() {
   }
 }
 
-// 📍 TAP TO SET PIN
+// TAP SET PIN
 map.on('click', function(e) {
   holePosition = [e.latlng.lat, e.latlng.lng];
 
