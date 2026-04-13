@@ -15,10 +15,14 @@ body {
   color:white;
 }
 
-/* MAP FULLSCREEN */
+/* MAP */
 #map {
+  position:absolute;
+  top:0;
+  left:0;
   height:100vh;
   width:100%;
+  z-index:1;
 }
 
 /* TOP HUD */
@@ -27,40 +31,40 @@ body {
   top:20px;
   left:50%;
   transform:translateX(-50%);
-  background:rgba(0,0,0,0.45);
+  background:rgba(0,0,0,0.5);
   backdrop-filter:blur(14px);
   padding:14px 22px;
   border-radius:22px;
   text-align:center;
   box-shadow:0 4px 20px rgba(0,0,0,0.6);
+  z-index:1000;
 }
 
 .distance {
   font-size:52px;
   font-weight:800;
   color:#7CFF8A;
-  line-height:1;
 }
 
 .club {
   font-size:18px;
   color:#d8ffd8;
-  margin-top:4px;
 }
 
 /* BOTTOM PANEL */
 .panel {
   position:absolute;
   bottom:0;
+  left:0;
   width:100%;
   padding:16px;
-  background:linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.3));
+  background:linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.4));
   backdrop-filter:blur(20px);
   border-top-left-radius:24px;
   border-top-right-radius:24px;
+  z-index:1000;
 }
 
-/* AI LINE */
 .ai {
   text-align:center;
   font-size:16px;
@@ -91,24 +95,20 @@ button {
 
 <div id="map"></div>
 
-<!-- TOP DISPLAY -->
+<!-- TOP HUD -->
 <div class="hud">
   <div class="distance" id="distance">--</div>
   <div class="club" id="club">--</div>
 </div>
 
-<!-- BOTTOM -->
+<!-- BOTTOM PANEL -->
 <div class="panel">
-
-  <div class="ai" id="aiBox">
-    Tap map to set pin
-  </div>
+  <div class="ai" id="aiBox">Tap map to set pin</div>
 
   <div class="buttons">
     <button onclick="startHole()">⛳ Start</button>
     <button onclick="addShot()">🏌️ Shot</button>
   </div>
-
 </div>
 
 <script>
@@ -121,7 +121,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
 let userMarker, holeMarker;
 let holePosition = null;
 
-// GPS
+// GPS UPDATE
 function updatePosition() {
   navigator.geolocation.getCurrentPosition(function(pos) {
 
@@ -136,7 +136,6 @@ function updatePosition() {
     }
 
     if (holePosition) {
-
       let d = Math.round(map.distance([lat,lng], holePosition));
 
       document.getElementById("distance").innerText = d + " m";
@@ -148,7 +147,6 @@ function updatePosition() {
 
       document.getElementById("club").innerText = club;
 
-      // 🎯 FINAL CADDIE STYLE
       document.getElementById("aiBox").innerHTML =
         "📍 " + d + "m • Use <b>" + club + "</b>";
     }
@@ -170,12 +168,12 @@ function startHole() {
   holeMarker = L.marker(holePosition).addTo(map);
 }
 
-// SHOT (placeholder)
+// SHOT
 function addShot() {
   alert("Shot tracked");
 }
 
-// SET PIN
+// TAP TO SET PIN
 map.on('click', function(e){
   holePosition = [e.latlng.lat, e.latlng.lng];
 
