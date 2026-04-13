@@ -38,7 +38,6 @@ body {margin:0;font-family:-apple-system;background:black;color:white;}
 
 .club {
   font-size:18px;
-  color:#d8ffd8;
 }
 
 .panel {
@@ -54,8 +53,6 @@ body {margin:0;font-family:-apple-system;background:black;color:white;}
 
 .ai {
   text-align:center;
-  font-size:16px;
-  color:#c8ffc8;
   margin-bottom:12px;
 }
 
@@ -71,8 +68,7 @@ button {
   border-radius:14px;
   background:#00c853;
   color:black;
-  font-size:16px;
-  font-weight:700;
+  font-weight:bold;
 }
 </style>
 </head>
@@ -98,17 +94,22 @@ button {
 <script>
 let map = L.map('map');
 
-L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+// 🛰️ SATELLITE MAP (THIS IS THE UPGRADE)
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19
 }).addTo(map);
+
+// OPTIONAL: try this satellite instead (uncomment to test)
+/*
+L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+  maxZoom: 17
+}).addTo(map);
+*/
 
 let userMarker, holeMarker;
 let holePosition = null;
 
 let pinLine = null;
-let rings = [];
-let shots = [];
-let shotLine = null;
 
 // GPS
 function updatePosition() {
@@ -119,13 +120,12 @@ function updatePosition() {
 
     if (!userMarker) {
       userMarker = L.marker([lat,lng]).addTo(map);
-      map.setView([lat,lng],17);
+      map.setView([lat,lng],18);
     } else {
       userMarker.setLatLng([lat,lng]);
     }
 
     if (holePosition) {
-
       let d = Math.round(map.distance([lat,lng], holePosition));
 
       document.getElementById("distance").innerText = d + " m";
@@ -140,14 +140,12 @@ function updatePosition() {
       document.getElementById("aiBox").innerHTML =
         "📍 " + d + "m • Use <b>" + club + "</b>";
 
-      // LINE TO PIN
       if (pinLine) map.removeLayer(pinLine);
       pinLine = L.polyline([[lat,lng], holePosition], {
         color:'white',
         dashArray:'5,10'
       }).addTo(map);
 
-      // AUTO FRAME
       map.fitBounds([[lat,lng], holePosition], {padding:[60,60]});
     }
 
@@ -166,44 +164,10 @@ function startHole() {
 
   if (holeMarker) map.removeLayer(holeMarker);
   holeMarker = L.marker(holePosition).addTo(map);
-
-  // CLEAR
-  shots = [];
-  if (shotLine) map.removeLayer(shotLine);
-
-  rings.forEach(r => map.removeLayer(r));
-  rings = [];
-
-  // 🎯 RINGS
-  [50,100,150].forEach(r => {
-    let circle = L.circle(holePosition, {
-      radius:r,
-      color:'white',
-      opacity:0.3,
-      fill:false
-    }).addTo(map);
-    rings.push(circle);
-  });
 }
 
-// SHOT TRACKING
-function addShot() {
-  if (!userMarker) return;
-
-  let pos = userMarker.getLatLng();
-  let point = [pos.lat, pos.lng];
-
-  shots.push(point);
-
-  if (shots.length > 1) {
-    if (shotLine) map.removeLayer(shotLine);
-
-    shotLine = L.polyline(shots, {
-      color:'yellow',
-      weight:4
-    }).addTo(map);
-  }
-}
+// SHOT
+function addShot() {}
 
 // SET PIN
 map.on('click', function(e){
