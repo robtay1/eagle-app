@@ -9,42 +9,43 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
-body {
-  margin:0;
-  background:black;
-  color:white;
-  font-family:-apple-system;
-}
+body {margin:0;background:black;color:white;font-family:-apple-system;}
 
-#map {
-  height:55vh;
-  width:100%;
-}
+#map {height:60vh;width:100%;}
 
-/* UI PANEL */
+/* GLASS PANEL */
 .panel {
-  background:#111;
+  position:fixed;
+  bottom:0;
+  width:100%;
+  background:rgba(0,0,0,0.9);
+  backdrop-filter: blur(10px);
   padding:15px;
   border-top-left-radius:20px;
   border-top-right-radius:20px;
-  margin-top:-20px;
 }
 
-/* BIG DISPLAY */
+/* BIG DISTANCE */
 .distance {
-  font-size:28px;
+  text-align:center;
+  font-size:36px;
   font-weight:bold;
 }
 
+/* CLUB DISPLAY */
 .club {
-  font-size:22px;
+  text-align:center;
+  font-size:24px;
   margin-bottom:10px;
 }
 
-/* SCORE */
-#score {
-  font-size:26px;
-  margin:10px 0;
+/* AI BOX */
+.aiBox {
+  background:#1c1c1c;
+  padding:10px;
+  border-radius:12px;
+  margin-top:10px;
+  text-align:left;
 }
 
 /* BUTTONS */
@@ -58,14 +59,6 @@ button {
   color:black;
   font-size:16px;
 }
-
-/* SHOT HISTORY */
-#shotsList {
-  font-size:14px;
-  max-height:100px;
-  overflow:auto;
-  margin-top:10px;
-}
 </style>
 </head>
 
@@ -77,36 +70,32 @@ button {
 
 <div class="panel">
 
-  <div class="distance" id="distance">Distance: --</div>
-  <div class="club" id="club">Club: --</div>
+  <div class="distance" id="distance">--</div>
+  <div class="club" id="club">--</div>
 
-  <div id="score">Score: 0</div>
+  <div class="aiBox" id="ai">
+    AI Caddie:<br>
+    Waiting for data...
+  </div>
 
   <button onclick="startHole()">⛳ Start Hole</button>
   <button onclick="addShot()">+ Shot</button>
 
-  <div id="shotsList"></div>
-
 </div>
 
 <script>
-// MAP (Satellite style)
 let map = L.map('map').setView([51.505, -0.09], 15);
 
-// ⚠️ Using a better-looking tile layer
 L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
   maxZoom: 19
 }).addTo(map);
 
-let userMarker = null;
-let holeMarker = null;
+let userMarker, holeMarker;
 let holePosition = null;
 
-let shots = [];
-let shotLine = null;
-let score = 0;
+// 🎯 DISTANCE RING
+let ring = null;
 
-// GPS TRACKING
 function updatePosition() {
   navigator.geolocation.getCurrentPosition(function(pos) {
 
@@ -122,18 +111,33 @@ function updatePosition() {
     }
 
     if (holePosition) {
-      let distance = map.distance([lat, lng], holePosition);
 
-      document.getElementById("distance").innerText =
-        "Distance: " + Math.round(distance) + " m";
+      let distance = map.distance([lat, lng], holePosition);
+      let distRounded = Math.round(distance);
+
+      document.getElementById("distance").innerText = distRounded + " m";
 
       let club = "Driver";
       if (distance < 200) club = "Iron";
       if (distance < 100) club = "Wedge";
       if (distance < 20) club = "Putter";
 
-      document.getElementById("club").innerText =
-        "Club: " + club;
+      document.getElementById("club").innerText = club;
+
+      // AI BOX UPDATE
+      document.getElementById("ai").innerHTML =
+        "<b>" + club + "</b><br>" +
+        distRounded + "m to pin<br>" +
+        "Aim centre<br>" +
+        "Smooth swing";
+
+      // 🎯 DRAW RING
+      if (ring) map.removeLayer(ring);
+      ring = L.circle(holePosition, {
+        radius: distance,
+        color: 'white',
+        fill:false
+      }).addTo(map);
     }
 
   });
@@ -141,7 +145,6 @@ function updatePosition() {
 
 setInterval(updatePosition, 2000);
 
-// START HOLE
 function startHole() {
   if (!userMarker) return;
 
@@ -151,41 +154,13 @@ function startHole() {
 
   if (holeMarker) map.removeLayer(holeMarker);
   holeMarker = L.marker(holePosition).addTo(map);
-
-  score = 0;
-  shots = [];
-  document.getElementById("score").innerText = "Score: 0";
-  document.getElementById("shotsList").innerHTML = "";
-
-  if (shotLine) map.removeLayer(shotLine);
 }
 
-// ADD SHOT
 function addShot() {
-  if (!userMarker) return;
-
-  let pos = userMarker.getLatLng();
-  let point = [pos.lat, pos.lng];
-
-  shots.push(point);
-
-  if (shots.length > 1) {
-    if (shotLine) map.removeLayer(shotLine);
-
-    shotLine = L.polyline(shots, {color:'yellow'}).addTo(map);
-
-    let prev = shots[shots.length - 2];
-    let dist = map.distance(prev, point);
-
-    document.getElementById("shotsList").innerHTML +=
-      "Shot " + shots.length + ": " + Math.round(dist) + " m<br>";
-  }
-
-  score++;
-  document.getElementById("score").innerText = "Score: " + score;
+  alert("Shot tracked (next step = visual lines)");
 }
 
-// SET HOLE BY CLICK
+// 📍 SET PIN MANUALLY
 map.on('click', function(e) {
   holePosition = [e.latlng.lat, e.latlng.lng];
 
