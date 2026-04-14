@@ -38,10 +38,10 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   z-index:1000;
 }
 
-/* BUTTONS */
+/* MAP BUTTONS */
 .mapBtns {
   position:absolute;
-  bottom:240px;
+  bottom:260px;
   width:100%;
   display:flex;
   justify-content:center;
@@ -57,10 +57,10 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   border-radius:10px;
 }
 
-/* STRIP */
+/* DISTANCE STRIP */
 .strip {
   position:absolute;
-  bottom:200px;
+  bottom:220px;
   width:100%;
   text-align:center;
   background:rgba(0,0,0,0.6);
@@ -68,16 +68,17 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   z-index:1000;
 }
 
-/* CARD */
+/* AI CARD */
 .card {
   position:absolute;
-  bottom:80px;
+  bottom:110px; /* ✅ FIXED POSITION */
   left:10px;
   right:10px;
   background:#1c1c1c;
   border-radius:20px;
   padding:18px;
   z-index:1000;
+  box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
 }
 
 .card h2 {
@@ -90,12 +91,13 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   font-size:15px;
 }
 
-/* BOTTOM */
+/* BOTTOM BUTTONS */
 .bottom {
   position:absolute;
   bottom:0;
   width:100%;
   display:flex;
+  z-index:1000;
 }
 
 .bottom button {
@@ -103,6 +105,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   padding:18px;
   border:none;
   font-weight:bold;
+  font-size:16px;
 }
 
 .green { background:#2ecc71; }
@@ -151,12 +154,10 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 <script>
 let map = L.map('map');
 
-// 🛰️ SATELLITE LAYER (KEY UPGRADE)
+// 🛰️ SATELLITE MAP
 L.tileLayer(
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  {
-    maxZoom: 19
-  }
+  { maxZoom: 19 }
 ).addTo(map);
 
 let userMarker, holeMarker;
@@ -168,6 +169,7 @@ let guideLine = null;
 let shots = [];
 let shotLines = [];
 
+// 📍 GPS TRACKING
 function updateGPS() {
   navigator.geolocation.getCurrentPosition(pos => {
 
@@ -201,11 +203,13 @@ function updateGPS() {
         <li>Aim center</li>
       `;
 
+      // CLEAR OLD RINGS
       rings.forEach(r => map.removeLayer(r));
       labels.forEach(l => map.removeLayer(l));
       rings = [];
       labels = [];
 
+      // DRAW RINGS
       [50,100,150].forEach(radius => {
 
         let circle = L.circle(holePos, {
@@ -231,13 +235,13 @@ function updateGPS() {
         labels.push(label);
       });
 
+      // GUIDE LINE
       if (guideLine) map.removeLayer(guideLine);
       guideLine = L.polyline([[lat,lng], holePos], {
         color:'white',
         weight:3,
         dashArray:'8,8'
       }).addTo(map);
-
     }
 
   });
@@ -245,6 +249,7 @@ function updateGPS() {
 
 setInterval(updateGPS,2000);
 
+// 📍 SET PIN
 function setPin() {
   map.once('click', e => {
     holePos = [e.latlng.lat, e.latlng.lng];
@@ -254,6 +259,7 @@ function setPin() {
   });
 }
 
+// 🟡 ADD SHOT
 function addShot() {
   if (!userMarker || !holePos) return;
 
@@ -265,12 +271,13 @@ function addShot() {
   }).addTo(map);
 
   shotLines.push(line);
-
   shots.push(1);
+
   document.getElementById("score").innerText =
     shots.length + " Stroke";
 }
 
+// 🔴 REMOVE SHOT
 function removeShot() {
   if (shotLines.length === 0) return;
 
@@ -281,10 +288,12 @@ function removeShot() {
     shots.length + " Stroke";
 }
 
+// 🧹 CLEAR
 function clearShots() {
   shotLines.forEach(l => map.removeLayer(l));
   shotLines = [];
   shots = [];
+
   document.getElementById("score").innerText = "0 Stroke";
 }
 </script>
