@@ -157,8 +157,12 @@ L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
 
 let userMarker, holeMarker;
 let holePos = null;
+
 let shots = [];
-let score = 0;
+let shotLines = [];
+
+let rings = [];
+let guideLine = null;
 
 function updateGPS() {
   navigator.geolocation.getCurrentPosition(pos => {
@@ -174,6 +178,7 @@ function updateGPS() {
     }
 
     if (holePos) {
+
       let d = Math.round(map.distance([lat,lng], holePos));
 
       let club = "Driver";
@@ -191,7 +196,32 @@ function updateGPS() {
         <li>Wind adjusted: ${d+5}m</li>
         <li>Aim center</li>
       `;
+
+      // 🔵 DRAW GUIDE LINE
+      if (guideLine) map.removeLayer(guideLine);
+      guideLine = L.polyline([[lat,lng], holePos], {
+        color:'white',
+        weight:2,
+        dashArray:'5,10'
+      }).addTo(map);
+
+      // 🔵 DRAW RINGS
+      rings.forEach(r => map.removeLayer(r));
+      rings = [];
+
+      [50,100,150].forEach(radius => {
+        rings.push(
+          L.circle(holePos, {
+            radius: radius,
+            color: 'white',
+            fill:false,
+            opacity:0.3
+          }).addTo(map)
+        );
+      });
+
     }
+
   });
 }
 
@@ -200,6 +230,7 @@ setInterval(updateGPS,2000);
 function setPin() {
   map.once('click', e => {
     holePos = [e.latlng.lat, e.latlng.lng];
+
     if (holeMarker) map.removeLayer(holeMarker);
     holeMarker = L.marker(holePos).addTo(map);
   });
@@ -208,22 +239,42 @@ function setPin() {
 function addShot() {
   if (!userMarker || !holePos) return;
 
-  let d = Math.round(map.distance(userMarker.getLatLng(), holePos));
+  let currentPos = userMarker.getLatLng();
+  let d = Math.round(map.distance(currentPos, holePos));
+
   shots.push(d);
 
-  score++;
+  // 🔴 DRAW SHOT LINE
+  let line = L.polyline([currentPos, holePos], {
+    color:'yellow',
+    weight:3
+  }).addTo(map);
+
+  shotLines.push(line);
+
+  // SCORE
+  let score = shots.length;
   document.getElementById("score").innerText = score + " Stroke";
 }
 
 function removeShot() {
-  if (score > 0) score--;
+  if (shots.length === 0) return;
+
   shots.pop();
-  document.getElementById("score").innerText = score + " Stroke";
+
+  let line = shotLines.pop();
+  map.removeLayer(line);
+
+  document.getElementById("score").innerText =
+    shots.length + " Stroke";
 }
 
 function clearShots() {
   shots = [];
-  score = 0;
+
+  shotLines.forEach(l => map.removeLayer(l));
+  shotLines = [];
+
   document.getElementById("score").innerText = "0 Stroke";
 }
 </script>
