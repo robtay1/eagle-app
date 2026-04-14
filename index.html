@@ -14,7 +14,6 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   position:absolute;
   height:100vh;
   width:100%;
-  z-index:1;
 }
 
 /* HEADER */
@@ -29,7 +28,6 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   z-index:1000;
 }
 
-/* HOLE INFO */
 .holebar {
   position:absolute;
   top:50px;
@@ -40,29 +38,29 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   z-index:1000;
 }
 
-/* MAP BUTTONS */
+/* BUTTONS */
 .mapBtns {
   position:absolute;
-  bottom:230px;
+  bottom:240px;
   width:100%;
   display:flex;
   justify-content:center;
-  gap:12px;
+  gap:10px;
   z-index:1000;
 }
 
 .mapBtns button {
-  padding:10px 16px;
-  border-radius:10px;
-  border:none;
   background:#333;
   color:white;
+  border:none;
+  padding:10px 14px;
+  border-radius:10px;
 }
 
-/* DISTANCE STRIP */
+/* STRIP */
 .strip {
   position:absolute;
-  bottom:190px;
+  bottom:200px;
   width:100%;
   text-align:center;
   background:rgba(0,0,0,0.6);
@@ -70,50 +68,54 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   z-index:1000;
 }
 
-/* AI CARD */
+/* CARD */
 .card {
   position:absolute;
   bottom:80px;
   left:10px;
   right:10px;
-  background:#1e1e1e;
-  border-radius:16px;
-  padding:16px;
+  background:#1c1c1c;
+  border-radius:20px;
+  padding:18px;
   z-index:1000;
 }
 
 .card h2 {
+  font-size:34px;
   margin:0;
-  font-size:28px;
 }
 
 .card ul {
-  padding-left:18px;
-  margin-top:10px;
-  font-size:14px;
+  margin-top:12px;
+  font-size:15px;
 }
 
-/* BOTTOM BAR */
+/* BOTTOM */
 .bottom {
   position:absolute;
   bottom:0;
   width:100%;
   display:flex;
-  z-index:1000;
 }
 
 .bottom button {
   flex:1;
-  padding:16px;
+  padding:18px;
   border:none;
   font-weight:bold;
 }
 
 .green { background:#2ecc71; }
 .red { background:#e74c3c; }
-.center {
-  background:#111;
+.center { background:black; color:white; }
+
+/* LABELS */
+.label {
+  background:black;
   color:white;
+  padding:2px 6px;
+  border-radius:6px;
+  font-size:12px;
 }
 </style>
 </head>
@@ -127,12 +129,10 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 
 <div class="mapBtns">
   <button onclick="setPin()">📍 Set Pin</button>
-  <button onclick="clearShots()">🧹 Clear Shots</button>
+  <button onclick="clearShots()">🧹 Clear</button>
 </div>
 
-<div class="strip" id="strip">
-  Distance to Pin: -- • Last Shot: --
-</div>
+<div class="strip" id="strip">Distance to Pin: --</div>
 
 <div class="card">
   <div>AI Caddie Advice</div>
@@ -158,11 +158,11 @@ L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
 let userMarker, holeMarker;
 let holePos = null;
 
+let rings = [];
+let labels = [];
+let guideLine = null;
 let shots = [];
 let shotLines = [];
-
-let rings = [];
-let guideLine = null;
 
 function updateGPS() {
   navigator.geolocation.getCurrentPosition(pos => {
@@ -171,7 +171,7 @@ function updateGPS() {
     let lng = pos.coords.longitude;
 
     if (!userMarker) {
-      userMarker = L.marker([lat,lng]).addTo(map);
+      userMarker = L.marker([lat,lng]).addTo(map).bindPopup("YOU").openPopup();
       map.setView([lat,lng],17);
     } else {
       userMarker.setLatLng([lat,lng]);
@@ -189,7 +189,7 @@ function updateGPS() {
       document.getElementById("club").innerText = club;
 
       document.getElementById("strip").innerText =
-        "Distance to Pin: " + d + "m • Last Shot: " + (shots.at(-1)||"--");
+        "Distance to Pin: " + d + "m";
 
       document.getElementById("advice").innerHTML = `
         <li>${d}m to pin</li>
@@ -197,28 +197,45 @@ function updateGPS() {
         <li>Aim center</li>
       `;
 
-      // 🔵 DRAW GUIDE LINE
+      // CLEAR OLD
+      rings.forEach(r => map.removeLayer(r));
+      labels.forEach(l => map.removeLayer(l));
+      rings = [];
+      labels = [];
+
+      // DRAW RINGS + LABELS
+      [50,100,150].forEach(radius => {
+
+        let circle = L.circle(holePos, {
+          radius: radius,
+          color: 'white',
+          weight: 2,
+          fill:false,
+          opacity:0.6
+        }).addTo(map);
+
+        rings.push(circle);
+
+        let label = L.marker([
+          holePos[0],
+          holePos[1] + (radius / 111320)
+        ], {
+          icon: L.divIcon({
+            className:'label',
+            html: radius + "m"
+          })
+        }).addTo(map);
+
+        labels.push(label);
+      });
+
+      // GUIDE LINE
       if (guideLine) map.removeLayer(guideLine);
       guideLine = L.polyline([[lat,lng], holePos], {
         color:'white',
-        weight:2,
-        dashArray:'5,10'
+        weight:3,
+        dashArray:'8,8'
       }).addTo(map);
-
-      // 🔵 DRAW RINGS
-      rings.forEach(r => map.removeLayer(r));
-      rings = [];
-
-      [50,100,150].forEach(radius => {
-        rings.push(
-          L.circle(holePos, {
-            radius: radius,
-            color: 'white',
-            fill:false,
-            opacity:0.3
-          }).addTo(map)
-        );
-      });
 
     }
 
@@ -239,42 +256,34 @@ function setPin() {
 function addShot() {
   if (!userMarker || !holePos) return;
 
-  let currentPos = userMarker.getLatLng();
-  let d = Math.round(map.distance(currentPos, holePos));
+  let pos = userMarker.getLatLng();
 
-  shots.push(d);
-
-  // 🔴 DRAW SHOT LINE
-  let line = L.polyline([currentPos, holePos], {
+  let line = L.polyline([pos, holePos], {
     color:'yellow',
-    weight:3
+    weight:4
   }).addTo(map);
 
   shotLines.push(line);
 
-  // SCORE
-  let score = shots.length;
-  document.getElementById("score").innerText = score + " Stroke";
+  shots.push(1);
+  document.getElementById("score").innerText =
+    shots.length + " Stroke";
 }
 
 function removeShot() {
-  if (shots.length === 0) return;
+  if (shotLines.length === 0) return;
 
+  map.removeLayer(shotLines.pop());
   shots.pop();
-
-  let line = shotLines.pop();
-  map.removeLayer(line);
 
   document.getElementById("score").innerText =
     shots.length + " Stroke";
 }
 
 function clearShots() {
-  shots = [];
-
   shotLines.forEach(l => map.removeLayer(l));
   shotLines = [];
-
+  shots = [];
   document.getElementById("score").innerText = "0 Stroke";
 }
 </script>
