@@ -7,327 +7,303 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <style>
-body { margin:0; font-family:-apple-system; background:#000; color:white; }
-#map { height:100vh; }
+html, body {
+  margin:0;
+  padding:0;
+  background:black;
+  font-family:-apple-system;
+  color:white;
+}
+
+/* MAP */
+#map {
+  height:60vh;
+  width:100%;
+}
 
 /* HEADER */
 .header {
-position:absolute; top:0; width:100%;
-text-align:center;
-background:rgba(0,0,0,0.5);
-padding:10px;
-font-weight:bold;
+  position:absolute;
+  top:0;
+  width:100%;
+  text-align:center;
+  padding:12px;
+  font-weight:bold;
+  font-size:20px;
+  background:rgba(0,0,0,0.5);
+  z-index:1000;
 }
 
 .subheader {
-position:absolute; top:45px; width:100%;
-text-align:center;
-background:rgba(0,0,0,0.4);
-padding:6px;
+  position:absolute;
+  top:45px;
+  width:100%;
+  text-align:center;
+  background:rgba(255,255,255,0.2);
+  padding:6px;
+  z-index:1000;
 }
 
 /* FLOATING BUTTONS */
 .floating {
-position:absolute;
-bottom:260px;
-left:50%;
-transform:translateX(-50%);
-display:flex; gap:10px;
-z-index:1000;
+  position:absolute;
+  bottom:180px;
+  width:100%;
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  z-index:1000;
 }
 
 .floating button {
-background:#1c1c1c;
-border:none;
-padding:10px 18px;
-border-radius:25px;
-color:white;
-font-weight:600;
-box-shadow:0 4px 10px rgba(0,0,0,0.5);
+  background:rgba(0,0,0,0.8);
+  color:white;
+  border:none;
+  padding:12px 18px;
+  border-radius:20px;
+  font-size:14px;
 }
 
 /* AI CARD */
 .ai-card {
-position:absolute;
-bottom:110px;
-left:10px;
-right:10px;
-background:rgba(0,0,0,0.85);
-border-radius:20px;
-padding:18px;
-z-index:1000;
+  position:absolute;
+  bottom:80px;
+  left:5%;
+  width:90%;
+  background:rgba(0,0,0,0.85);
+  padding:16px;
+  border-radius:16px;
+  z-index:1000;
 }
 
-.ai-title {
-font-size:30px;
-font-weight:bold;
-margin-bottom:10px;
+.ai-card h1 {
+  margin:0;
+  font-size:32px;
 }
 
 /* BOTTOM BAR */
 .bottom-bar {
-position:absolute;
-bottom:0;
-width:100%;
-display:flex;
-z-index:1000;
+  position:absolute;
+  bottom:0;
+  width:100%;
+  display:flex;
 }
 
-.btn {
-flex:1;
-padding:16px;
-text-align:center;
-font-weight:bold;
+.bottom-bar button {
+  flex:1;
+  padding:16px;
+  border:none;
+  font-size:16px;
+  color:white;
 }
 
-.green { background:#00c853; }
-.red { background:#d50000; }
-.center { background:#111; }
-
-/* ARROWS */
-.arrow {
-position:absolute;
-top:50%;
-transform:translateY(-50%);
-background:rgba(0,0,0,0.6);
-padding:10px;
-border-radius:50%;
-z-index:1000;
-}
-
-.left { left:10px; }
-.right { right:10px; }
+.green {background:#0f0;}
+.red {background:#c00;}
+.dark {background:#111;}
 
 /* SCORECARD */
-.scorecard {
-position:fixed;
-right:-100%;
-top:0;
-width:100%;
-height:100%;
-background:#111;
-transition:0.3s;
-overflow:auto;
-padding:20px;
-z-index:2000;
+#scorecard {
+  display:none;
+  padding:10px;
 }
 
-.scorecard.open { right:0; }
-
 table {
-width:100%;
-border-collapse:collapse;
-margin-top:15px;
+  width:100%;
+  border-collapse:collapse;
 }
 
 th, td {
-border:1px solid #333;
-padding:6px;
-text-align:center;
+  border:1px solid #333;
+  padding:6px;
+  text-align:center;
 }
 
 input, select {
-width:100%;
-background:#222;
-border:none;
-color:white;
-padding:4px;
+  width:100%;
+  background:black;
+  color:white;
+  border:1px solid #555;
 }
 
-/* BUTTON */
-.score-btn {
-position:absolute;
-bottom:320px;
-left:50%;
-transform:translateX(-50%);
-z-index:1000;
+.top-buttons {
+  display:flex;
+  gap:10px;
+  margin-bottom:10px;
 }
 
+.top-buttons button {
+  flex:1;
+  padding:10px;
+  background:#111;
+  color:white;
+  border:none;
+  border-radius:8px;
+}
 </style>
 </head>
 
 <body>
 
+<!-- MAP VIEW -->
 <div id="map"></div>
 
 <div class="header">🏌️ Eagle AI Caddie</div>
 <div class="subheader">Hole 1 • Par 4 • 400y</div>
 
 <div class="floating">
-<button onclick="setPin()">📍 Set Pin</button>
-<button onclick="clearShots()">🧹 Clear Shots</button>
-</div>
-
-<div class="score-btn">
-<button onclick="toggleScorecard()">📊 Scorecard</button>
+  <button onclick="setPin()">📍 Set Pin</button>
+  <button onclick="clearShots()">🧹 Clear</button>
 </div>
 
 <div class="ai-card">
-<div>AI Caddie Advice</div>
-<div class="ai-title" id="club">--</div>
-<div id="distanceText">--</div>
-<div>Wind: 5mph →</div>
-<div>Aim center</div>
+  <div>AI Caddie Advice</div>
+  <h1 id="club">-</h1>
+  <div id="distance">-- m to pin</div>
+  <div id="wind">Wind adjusted: --</div>
+  <div>Aim center</div>
 </div>
 
 <div class="bottom-bar">
-<div class="btn green" onclick="addShot()">+ Add Shot</div>
-<div class="btn center" id="score">0 Stroke</div>
-<div class="btn red" onclick="removeShot()">- Remove</div>
+  <button class="green" onclick="addShot()">+ Add Shot</button>
+  <button class="dark" onclick="openScorecard()">Scorecard</button>
+  <button class="red" onclick="removeShot()">- Remove</button>
 </div>
 
-<div class="arrow left" onclick="prevHole()">⬅️</div>
-<div class="arrow right" onclick="nextHole()">➡️</div>
+<!-- SCORECARD -->
+<div id="scorecard">
+  <div class="top-buttons">
+    <button onclick="closeScorecard()">⬅ Back to Caddie</button>
+  </div>
 
-<div class="scorecard" id="scorecard">
-<h2>Virtual Scorecard</h2>
+  <h2>Virtual Scorecard</h2>
 
-<input placeholder="Course Name"><br><br>
-<input placeholder="Handicap Index">
-<input placeholder="Playing Handicap">
+  <input placeholder="Course Name">
 
-<table id="card">
-<tr>
-<th>Hole</th><th>Par</th><th>SI</th>
-<th>White</th><th>Yellow</th><th>Red</th>
-<th>FW</th><th>GIR</th><th>Putts</th><th>Total</th>
-</tr>
-</table>
+  <div style="display:flex; gap:10px; margin:10px 0;">
+    <input placeholder="Handicap Index">
+    <input placeholder="Playing Handicap">
+  </div>
+
+  <table>
+    <tr>
+      <th>Hole</th><th>Par</th><th>SI</th>
+      <th>White</th><th>Yellow</th><th>Red</th>
+      <th>FW</th><th>GIR</th><th>Putts</th><th>Total</th>
+    </tr>
+
+    <script>
+    for(let i=1;i<=9;i++){
+      document.write(`
+      <tr>
+        <td>${i}</td>
+        <td><input></td>
+        <td><input></td>
+        <td><input></td>
+        <td><input></td>
+        <td><input></td>
+        <td>
+          <select><option>Y</option><option>N</option></select>
+        </td>
+        <td>
+          <select><option>Y</option><option>N</option></select>
+        </td>
+        <td><input></td>
+        <td><input></td>
+      </tr>
+      `);
+    }
+    </script>
+
+  </table>
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-let map = L.map('map').setView([51.5,-0.1],18);
+let map = L.map('map').setView([53.8,-2.2], 18);
 
-// SATELLITE
-L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png').addTo(map);
+/* 🔥 HIGH QUALITY SATELLITE */
+L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+  maxZoom: 20
+}).addTo(map);
 
-let userMarker, pinMarker;
-let rings = [];
+/* PRO MARKERS */
+let player = L.circleMarker([53.8,-2.2], {
+  radius:8,
+  color:"#00f",
+  fillColor:"#00f",
+  fillOpacity:1
+}).addTo(map);
+
+let pin;
 let shots = [];
-let score = 0;
 
-// LOCATION
-navigator.geolocation.watchPosition(pos=>{
-let lat = pos.coords.latitude;
-let lng = pos.coords.longitude;
-
-if(!userMarker){
-userMarker = L.circleMarker([lat,lng],{
-radius:8, color:'#00bfff', fillOpacity:1
-}).addTo(map);
-
-map.setView([lat,lng],18);
-}else{
-userMarker.setLatLng([lat,lng]);
+/* RINGS */
+function drawRings(center){
+  [50,100,150].forEach(r=>{
+    L.circle(center,{
+      radius:r,
+      color:"white",
+      opacity:0.3,
+      fill:false
+    }).addTo(map);
+  });
 }
 
-drawRings();
-updateDistance();
-});
+drawRings(player.getLatLng());
 
-// SET PIN
 function setPin(){
-let center = map.getCenter();
-
-if(pinMarker) map.removeLayer(pinMarker);
-
-pinMarker = L.marker(center).addTo(map);
-
-drawRings();
-updateDistance();
+  map.on('click', function(e){
+    if(pin) map.removeLayer(pin);
+    pin = L.marker(e.latlng).addTo(map);
+    updateDistance();
+  });
 }
 
-// RINGS
-function drawRings(){
-rings.forEach(r=>map.removeLayer(r));
-rings=[];
-
-if(!pinMarker) return;
-
-[50,100,150].forEach(d=>{
-let ring = L.circle(pinMarker.getLatLng(),{
-radius:d,
-color:'white',
-fill:false,
-opacity:0.3
-}).addTo(map);
-
-rings.push(ring);
-});
-}
-
-// DISTANCE
 function updateDistance(){
-if(!userMarker || !pinMarker) return;
+  if(!pin) return;
+  let d = map.distance(player.getLatLng(), pin.getLatLng());
+  document.getElementById("distance").innerText =
+    Math.round(d) + " m to pin";
 
-let d = map.distance(userMarker.getLatLng(), pinMarker.getLatLng());
+  let club = d < 100 ? "Wedge" :
+             d < 150 ? "9 Iron" :
+             d < 200 ? "7 Iron" : "Driver";
 
-document.getElementById("distanceText").innerText =
-Math.round(d)+" m to pin";
-
-let club = "Driver";
-if(d<150) club="9 Iron";
-if(d<100) club="Wedge";
-
-document.getElementById("club").innerText = club;
+  document.getElementById("club").innerText = club;
 }
 
-// SHOTS
 function addShot(){
-if(!userMarker || !pinMarker) return;
-
-let line = L.polyline([
-userMarker.getLatLng(),
-pinMarker.getLatLng()
-], {dashArray:'5,5', color:'white'}).addTo(map);
-
-shots.push(line);
-score++;
-document.getElementById("score").innerText = score+" Stroke";
+  if(!pin) return;
+  let shot = L.polyline([player.getLatLng(), pin.getLatLng()],{
+    dashArray:"5,5"
+  }).addTo(map);
+  shots.push(shot);
 }
 
 function removeShot(){
-if(shots.length){
-map.removeLayer(shots.pop());
-score--;
-document.getElementById("score").innerText = score+" Stroke";
-}
+  let s = shots.pop();
+  if(s) map.removeLayer(s);
 }
 
 function clearShots(){
-shots.forEach(s=>map.removeLayer(s));
-shots=[];
-score=0;
-document.getElementById("score").innerText = "0 Stroke";
+  shots.forEach(s=>map.removeLayer(s));
+  shots=[];
 }
 
-// SCORECARD
-function toggleScorecard(){
-document.getElementById("scorecard").classList.toggle("open");
+function openScorecard(){
+  document.getElementById("map").style.display="none";
+  document.querySelectorAll(".header,.subheader,.floating,.ai-card,.bottom-bar")
+    .forEach(el=>el.style.display="none");
+  document.getElementById("scorecard").style.display="block";
 }
 
-// NAV
-function prevHole(){ alert("Previous Hole"); }
-function nextHole(){ alert("Next Hole"); }
-
-// BUILD TABLE
-for(let i=1;i<=18;i++){
-let row = "<tr>";
-row += `<td>${i}</td>`;
-row += `<td><input></td>`;
-row += `<td><input></td>`;
-row += `<td><input></td>`;
-row += `<td><input></td>`;
-row += `<td><input></td>`;
-row += `<td><select><option>Y</option><option>N</option></select></td>`;
-row += `<td><select><option>Y</option><option>N</option></select></td>`;
-row += `<td><input></td>`;
-row += `<td><input></td>`;
-row += "</tr>";
-
-document.getElementById("card").innerHTML += row;
+function closeScorecard(){
+  document.getElementById("map").style.display="block";
+  document.querySelectorAll(".header,.subheader,.floating,.ai-card,.bottom-bar")
+    .forEach(el=>el.style.display="block");
+  document.getElementById("scorecard").style.display="block";
+  document.getElementById("scorecard").style.display="none";
 }
 </script>
 
