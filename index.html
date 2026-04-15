@@ -19,22 +19,39 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 .wind { position:absolute; top:90px; right:10px; background:rgba(0,0,0,0.6); padding:6px 10px; border-radius:10px; font-size:13px; z-index:1000; }
 
 /* NAV */
-.nav { position:absolute; bottom:340px; width:100%; display:flex; justify-content:space-between; padding:0 20px; z-index:1000; }
+.nav { position:absolute; bottom:360px; width:100%; display:flex; justify-content:space-between; padding:0 20px; z-index:1000; }
 .nav button { background:rgba(0,0,0,0.7); color:white; border:none; padding:8px 14px; border-radius:10px; }
 
 /* FLOAT BUTTONS */
-.mapBtns { position:absolute; bottom:270px; width:100%; display:flex; justify-content:center; gap:12px; z-index:1000; }
-.mapBtns button { background:rgba(30,30,30,0.9); color:white; border:none; padding:12px 18px; border-radius:12px; font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.5); }
+.mapBtns { position:absolute; bottom:290px; width:100%; display:flex; justify-content:center; gap:12px; z-index:1000; }
+.mapBtns button {
+  background:rgba(30,30,30,0.9);
+  color:white;
+  border:none;
+  padding:12px 18px;
+  border-radius:14px;
+  font-weight:bold;
+  box-shadow:0 6px 16px rgba(0,0,0,0.6);
+}
 
 /* STRIP */
-.strip { position:absolute; bottom:230px; width:100%; text-align:center; background:rgba(0,0,0,0.6); padding:6px; font-size:14px; z-index:1000; }
+.strip { position:absolute; bottom:250px; width:100%; text-align:center; background:rgba(0,0,0,0.6); padding:6px; }
 
 /* CARD */
-.card { position:absolute; bottom:120px; left:10px; right:10px; background:#1c1c1c; border-radius:20px; padding:18px; z-index:1000; box-shadow:0 -5px 20px rgba(0,0,0,0.6); }
-.card h2 { font-size:36px; margin:5px 0; }
+.card {
+  position:absolute;
+  bottom:130px;
+  left:10px;
+  right:10px;
+  background:#1c1c1c;
+  border-radius:20px;
+  padding:18px;
+  box-shadow:0 -5px 20px rgba(0,0,0,0.6);
+}
+.card h2 { font-size:38px; margin:6px 0; }
 
 /* BOTTOM */
-.bottom { position:absolute; bottom:0; width:100%; display:flex; z-index:1000; }
+.bottom { position:absolute; bottom:0; width:100%; display:flex; }
 .bottom button { flex:1; padding:16px; border:none; font-weight:bold; }
 .green { background:#2ecc71; }
 .red { background:#e74c3c; }
@@ -42,16 +59,21 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 .center { background:black; color:white; }
 
 /* LABEL */
-.label { background:rgba(0,0,0,0.8); color:white; padding:3px 8px; border-radius:8px; font-size:12px; }
+.label {
+  background:rgba(0,0,0,0.85);
+  padding:4px 10px;
+  border-radius:10px;
+  font-size:12px;
+}
 
-/* SCORECARD PANEL */
+/* SCORECARD */
 #scorecardPanel {
   position:fixed;
   top:0;
   right:-100%;
-  width:90%;
+  width:95%;
   height:100%;
-  background:#111;
+  background:#0f0f0f;
   z-index:2000;
   transition:0.3s;
   overflow:auto;
@@ -59,38 +81,37 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 #scorecardPanel.open { right:0; }
 
 .scoreHeader {
+  padding:15px;
   display:flex;
   justify-content:space-between;
-  padding:15px;
   background:#000;
+  font-size:18px;
 }
 
-#openScorecard {
-  position:absolute;
-  top:130px;
-  left:10px;
-  z-index:1000;
-  background:black;
-  color:white;
-  border:none;
+.scoreInputs {
   padding:10px;
-  border-radius:10px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
 }
 
-table { width:100%; border-collapse:collapse; font-size:12px; }
-th, td { border:1px solid #333; padding:6px; text-align:center; }
-
-input {
-  width:50px;
-  background:black;
+.scoreInputs input {
+  background:#000;
+  border:1px solid #444;
   color:white;
-  border:1px solid #555;
+  padding:6px;
+  border-radius:8px;
 }
+
+/* TABLE */
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th, td { padding:6px; border-bottom:1px solid #222; text-align:center; }
 
 .toggle {
-  background:#333;
-  border-radius:6px;
+  background:#222;
+  border-radius:8px;
   padding:4px;
+  cursor:pointer;
 }
 .toggle.active { background:#2ecc71; }
 </style>
@@ -114,12 +135,11 @@ input {
   <button onclick="clearShots()">🧹 Clear</button>
 </div>
 
-<div class="strip" id="strip">Distance: --</div>
+<div class="strip" id="strip">Distance --</div>
 
 <div class="card">
   <div>AI Caddie</div>
   <h2 id="club">--</h2>
-  <ul id="advice"><li>Set pin</li></ul>
 </div>
 
 <div class="bottom">
@@ -129,26 +149,33 @@ input {
   <button class="red" onclick="removeShot()">-</button>
 </div>
 
-<button id="openScorecard" onclick="openScorecard()">📊</button>
+<button onclick="openScorecard()" style="position:absolute;top:130px;left:10px;">📊</button>
 
 <div id="scorecardPanel">
   <div class="scoreHeader">
-    <div>Scorecard</div>
+    Scorecard
     <button onclick="closeScorecard()">✕</button>
   </div>
-  <div style="padding:10px;">
-    HI <input type="number"> PH <input type="number">
+
+  <div class="scoreInputs">
+    Course <input placeholder="Enter course">
+    HI <input type="number">
+    PH <input type="number">
   </div>
+
   <table id="scoreTable"></table>
 </div>
 
 <script>
 let map=L.map('map');
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}).addTo(map);
+
+L.tileLayer(
+'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+{maxZoom:19}).addTo(map);
 
 /* ICONS */
 let userIcon=L.divIcon({
- html:'<div style="display:flex;align-items:center;gap:4px;"><div style="width:12px;height:12px;background:#00aaff;border-radius:50%;border:3px solid white;"></div><div style="font-size:12px;">YOU</div></div>'
+ html:'<div style="display:flex;align-items:center;gap:4px;"><div style="width:14px;height:14px;background:#00aaff;border-radius:50%;border:3px solid white;"></div><div>YOU</div></div>'
 });
 let flagIcon=L.divIcon({html:'🏁'});
 
@@ -158,26 +185,16 @@ let scores=[],currentHole=0;
 
 function updateHoleUI(){
 let h=holes[currentHole];
-let s=scores[currentHole]??"-";
-document.getElementById("holeText").innerText=`Hole ${currentHole+1} • Par ${h.par} • ${h.yards}y • Score ${s}`;
+document.getElementById("holeText").innerText=`Hole ${currentHole+1} • Par ${h.par} • ${h.yards}`;
 }
 updateHoleUI();
 
-/* NAV */
-function nextHole(){currentHole=(currentHole+1)%holes.length;resetHole();}
-function prevHole(){currentHole=(currentHole-1+holes.length)%holes.length;resetHole();}
-function resetHole(){clearShots();holePos=null;if(holeMarker)map.removeLayer(holeMarker);updateHoleUI();}
-
-/* FINISH */
-function finishHole(){scores[currentHole]=shots.length;nextHole();}
-
 /* GAME */
-let userMarker,holeMarker,holePos=null;
-let shots=[],shotLines=[],shotLabels=[];
+let userMarker,holeMarker,holePos=null,rings=[],labels=[],shots=[],lines=[],labels2=[];
 
 function updateGPS(){
-navigator.geolocation.getCurrentPosition(pos=>{
-let lat=pos.coords.latitude,lng=pos.coords.longitude;
+navigator.geolocation.getCurrentPosition(p=>{
+let lat=p.coords.latitude,lng=p.coords.longitude;
 
 if(!userMarker){
 userMarker=L.marker([lat,lng],{icon:userIcon}).addTo(map);
@@ -187,7 +204,23 @@ map.setView([lat,lng],18);
 if(holePos){
 let d=Math.round(map.distance([lat,lng],holePos));
 document.getElementById("strip").innerText="Distance "+d+"m";
-document.getElementById("club").innerText=d<100?"Wedge":d<140?"9 Iron":d<200?"7 Iron":"Driver";
+document.getElementById("club").innerText=d<100?"Wedge":d<150?"9":"7/Driver";
+
+/* RINGS */
+rings.forEach(r=>map.removeLayer(r));
+labels.forEach(l=>map.removeLayer(l));
+rings=[];labels=[];
+
+[50,100,150].forEach(r=>{
+let c=L.circle(holePos,{radius:r,color:'white',opacity:0.3}).addTo(map);
+rings.push(c);
+
+let lab=L.marker([holePos[0],holePos[1]+(r/111320)],{
+icon:L.divIcon({className:'label',html:r+"m"})
+}).addTo(map);
+
+labels.push(lab);
+});
 }
 });
 }
@@ -202,44 +235,36 @@ holeMarker=L.marker(holePos,{icon:flagIcon}).addTo(map);
 });
 }
 
-/* ARC */
-function arc(s,e){
-let a=[];for(let i=0;i<=20;i++){
-let t=i/20;
-a.push([s.lat+(e.lat-s.lat)*t+0.0002*Math.sin(Math.PI*t),s.lng+(e.lng-s.lng)*t]);
-}
-return a;
-}
-
 /* SHOTS */
 function addShot(){
 if(!userMarker||!holePos)return;
-let s=userMarker.getLatLng(),e={lat:holePos[0],lng:holePos[1]};
-let line=L.polyline(arc(s,e),{color:'#00ffcc'}).addTo(map);
-shotLines.push(line);
 
-let d=Math.round(map.distance(s,[e.lat,e.lng]));
-let mid=line.getLatLngs()[10];
+let s=userMarker.getLatLng();
+let d=Math.round(map.distance(s,holePos));
 
-let label=L.marker(mid,{icon:L.divIcon({className:'label',html:d+"m"})}).addTo(map);
-shotLabels.push(label);
+let line=L.polyline([s,holePos],{color:'#00ffcc'}).addTo(map);
+lines.push(line);
+
+let mid=[(s.lat+holePos[0])/2,(s.lng+holePos[1])/2];
+let lab=L.marker(mid,{icon:L.divIcon({className:'label',html:d+"m"})}).addTo(map);
+labels2.push(lab);
 
 shots.push(1);
 document.getElementById("score").innerText=shots.length;
 }
 
 function removeShot(){
-if(!shotLines.length)return;
-map.removeLayer(shotLines.pop());
-map.removeLayer(shotLabels.pop());
+if(!lines.length)return;
+map.removeLayer(lines.pop());
+map.removeLayer(labels2.pop());
 shots.pop();
 document.getElementById("score").innerText=shots.length;
 }
 
 function clearShots(){
-shotLines.forEach(l=>map.removeLayer(l));
-shotLabels.forEach(l=>map.removeLayer(l));
-shotLines=[];shotLabels=[];shots=[];
+lines.forEach(l=>map.removeLayer(l));
+labels2.forEach(l=>map.removeLayer(l));
+lines=[];labels2=[];shots=[];
 document.getElementById("score").innerText=0;
 }
 
@@ -247,7 +272,7 @@ document.getElementById("score").innerText=0;
 function openScorecard(){document.getElementById("scorecardPanel").classList.add("open");}
 function closeScorecard(){document.getElementById("scorecardPanel").classList.remove("open");}
 
-let data=Array.from({length:18},(_,i)=>({hole:i+1,par:4,putts:0,shots:0}));
+let data=Array.from({length:18},(_,i)=>({hole:i+1,par:4,fw:false,gir:false,putts:0,shots:0}));
 
 function build(){
 let html="<tr><th>H</th><th>P</th><th>FW</th><th>GIR</th><th>Putts</th><th>Shots</th></tr>";
@@ -255,18 +280,27 @@ data.forEach((h,i)=>{
 html+=`<tr>
 <td>${h.hole}</td>
 <td>${h.par}</td>
-<td class="toggle" onclick="toggleFW(${i})">N</td>
-<td class="toggle" onclick="toggleGIR(${i})">N</td>
-<td><input onchange="data[${i}].putts=this.value"></td>
-<td><input onchange="data[${i}].shots=this.value"></td>
+<td class="toggle ${h.fw?'active':''}" onclick="toggleFW(${i})">${h.fw?'Y':'N'}</td>
+<td class="toggle ${h.gir?'active':''}" onclick="toggleGIR(${i})">${h.gir?'Y':'N'}</td>
+<td><input onchange="setPutts(${i},this.value)"></td>
+<td><input onchange="setShots(${i},this.value)"></td>
 </tr>`;
 });
+
+/* TOTALS */
+let totalPutts=data.reduce((a,b)=>a+(+b.putts||0),0);
+let totalShots=data.reduce((a,b)=>a+(+b.shots||0),0);
+
+html+=`<tr><th>18</th><th>-</th><th>-</th><th>-</th><th>${totalPutts}</th><th>${totalShots}</th></tr>`;
+
 document.getElementById("scoreTable").innerHTML=html;
 }
 build();
 
-function toggleFW(i){}
-function toggleGIR(i){}
+function toggleFW(i){data[i].fw=!data[i].fw;build();}
+function toggleGIR(i){data[i].gir=!data[i].gir;build();}
+function setPutts(i,v){data[i].putts=v;build();}
+function setShots(i,v){data[i].shots=v;build();}
 </script>
 
 </body>
