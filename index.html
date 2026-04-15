@@ -1,267 +1,271 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Eagle AI Caddie</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eagle AI Caddie</title>
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
-  <style>
-    html, body {
-      margin: 0;
-      height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont;
-      background: black;
-      color: white;
-    }
+<style>
+body { margin:0; font-family:-apple-system; background:#000; color:white; }
 
-    #map {
-      height: 100%;
-      width: 100%;
-    }
+#map { height:100vh; }
 
-    /* HEADER */
-    .top-bar {
-      position: absolute;
-      top: 0;
-      width: 100%;
-      text-align: center;
-      background: rgba(0,0,0,0.6);
-      padding: 10px 0;
-      font-weight: bold;
-      z-index: 1000;
-    }
+.header {
+position:absolute; top:0; width:100%;
+text-align:center; padding:10px;
+background:rgba(0,0,0,0.4);
+font-weight:bold;
+}
 
-    .hole-info {
-      position: absolute;
-      top: 50px;
-      width: 100%;
-      text-align: center;
-      background: rgba(0,0,0,0.4);
-      padding: 6px;
-      z-index: 1000;
-    }
+.subheader {
+position:absolute; top:50px; width:100%;
+text-align:center;
+background:rgba(0,0,0,0.4);
+padding:6px;
+}
 
-    /* WIND */
-    .wind {
-      position: absolute;
-      top: 90px;
-      right: 15px;
-      background: rgba(0,0,0,0.7);
-      padding: 8px 12px;
-      border-radius: 20px;
-      font-size: 14px;
-      z-index: 1000;
-    }
+.ai-card {
+position:absolute; bottom:120px; left:10px; right:10px;
+background:rgba(0,0,0,0.8);
+border-radius:20px;
+padding:20px;
+}
 
-    /* FLOATING BUTTONS */
-    .floating-buttons {
-      position: absolute;
-      bottom: 260px;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      z-index: 1000;
-    }
+.ai-title { font-size:28px; font-weight:bold; }
 
-    .btn {
-      background: rgba(30,30,30,0.9);
-      padding: 12px 18px;
-      border-radius: 12px;
-      font-size: 14px;
-    }
+.bottom-bar {
+position:absolute; bottom:0; width:100%;
+display:flex;
+}
 
-    /* AI CARD */
-    .card {
-      position: absolute;
-      bottom: 100px;
-      width: 90%;
-      left: 5%;
-      background: rgba(20,20,20,0.95);
-      border-radius: 16px;
-      padding: 20px;
-      z-index: 1000;
-    }
+.btn {
+flex:1; padding:15px; text-align:center;
+font-weight:bold;
+}
 
-    .club {
-      font-size: 36px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
+.green { background:#0f0; color:black; }
+.red { background:#f33; }
 
-    /* BOTTOM BAR */
-    .bottom-bar {
-      position: absolute;
-      bottom: 0;
-      width: 100%;
-      display: flex;
-      z-index: 1000;
-    }
+.center { background:#111; }
 
-    .bottom-bar div {
-      flex: 1;
-      text-align: center;
-      padding: 18px;
-      font-weight: bold;
-    }
+.floating {
+position:absolute;
+bottom:260px;
+left:50%;
+transform:translateX(-50%);
+display:flex; gap:10px;
+}
 
-    .add { background: #00c853; }
-    .stroke { background: black; }
-    .remove { background: #d50000; }
+.floating button {
+background:#222;
+border:none;
+padding:10px 15px;
+border-radius:20px;
+color:white;
+}
 
-  </style>
+.arrow {
+position:absolute; top:50%;
+background:#000a;
+padding:10px;
+border-radius:50%;
+}
+
+.left { left:10px; }
+.right { right:10px; }
+
+.scorecard {
+position:fixed;
+right:-100%;
+top:0;
+width:100%;
+height:100%;
+background:#111;
+transition:0.3s;
+overflow:auto;
+padding:20px;
+}
+
+.scorecard.open { right:0; }
+
+table { width:100%; border-collapse:collapse; }
+td, th { border:1px solid #333; padding:5px; text-align:center; }
+
+input, select {
+width:100%;
+background:#222;
+border:none;
+color:white;
+}
+
+.top-controls {
+position:absolute;
+bottom:320px;
+left:50%;
+transform:translateX(-50%);
+}
+
+</style>
 </head>
 
 <body>
 
 <div id="map"></div>
 
-<div class="top-bar">🏌️ Eagle AI Caddie</div>
-<div class="hole-info">Hole 1 • Par 4 • 400y</div>
-<div class="wind">💨 5mph →</div>
+<div class="header">🏌️ Eagle AI Caddie</div>
+<div class="subheader">Hole 1 • Par 4 • 400y</div>
 
-<div class="floating-buttons">
-  <div class="btn" onclick="setPin()">📍 Set Pin</div>
-  <div class="btn" onclick="clearShots()">🧹 Clear</div>
+<div class="floating">
+<button onclick="setPin()">📍 Set Pin</button>
+<button onclick="clearShots()">🧹 Clear</button>
 </div>
 
-<div class="card">
-  <div>AI Caddie Advice</div>
-  <div class="club" id="club">--</div>
-  <div id="info"></div>
+<div class="top-controls">
+<button onclick="openScorecard()">📊 Scorecard</button>
+</div>
+
+<div class="ai-card">
+<div>AI Caddie Advice</div>
+<div class="ai-title" id="club">--</div>
+<ul>
+<li id="dist">--</li>
+<li id="wind">Wind: 5mph →</li>
+<li>Aim center</li>
+</ul>
 </div>
 
 <div class="bottom-bar">
-  <div class="add" onclick="addShot()">+ Add Shot</div>
-  <div class="stroke" id="score">0 Stroke</div>
-  <div class="remove" onclick="removeShot()">- Remove</div>
+<div class="btn green" onclick="addShot()">+ Add Shot</div>
+<div class="btn center" id="score">0 Stroke</div>
+<div class="btn red" onclick="removeShot()">- Remove</div>
 </div>
 
+<div class="arrow left" onclick="prevHole()">⬅️</div>
+<div class="arrow right" onclick="nextHole()">➡️</div>
+
+<div class="scorecard" id="scorecard">
+
+<h2>Virtual Scorecard</h2>
+
+<input placeholder="Course Name">
+
+<br><br>
+
+<input placeholder="Handicap Index">
+<input placeholder="Playing Handicap">
+
+<br><br>
+
+<table id="card">
+<tr>
+<th>Hole</th><th>Par</th><th>SI</th>
+<th>White</th><th>Yellow</th><th>Red</th>
+<th>FW</th><th>GIR</th><th>Putts</th><th>Total</th>
+</tr>
+</table>
+
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <script>
-let map = L.map('map').setView([53.8, -1.6], 18);
+let map = L.map('map').setView([51.5,-0.1],18);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png').addTo(map);
 
-// SATELLITE
-L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  { maxZoom: 19 }
-).addTo(map);
-
-// USER DOT (REAL STYLE)
-let userMarker = L.circleMarker([53.8, -1.6], {
-  radius: 8,
-  color: '#fff',
-  fillColor: '#2196f3',
-  fillOpacity: 1
-}).addTo(map);
-
-// PIN (FLAG STYLE)
-let pin = null;
-
+let userMarker, pinMarker;
 let shots = [];
 let score = 0;
 
-// RINGS
-let rings = [];
+navigator.geolocation.watchPosition(pos=>{
+let lat = pos.coords.latitude;
+let lng = pos.coords.longitude;
 
-function drawRings(center) {
-  rings.forEach(r => map.removeLayer(r));
-  rings = [];
-
-  [50,100,150].forEach(d => {
-    let circle = L.circle(center, {
-      radius: d,
-      color: 'white',
-      opacity: 0.3,
-      fill: false
-    }).addTo(map);
-
-    rings.push(circle);
-
-    L.marker([
-      center[0],
-      center[1] + (d / 111320)
-    ], {
-      icon: L.divIcon({
-        html: `<div style="background:black;padding:4px 8px;border-radius:8px;font-size:12px">${d}m</div>`
-      })
-    }).addTo(map);
-  });
+if(!userMarker){
+userMarker = L.circleMarker([lat,lng],{
+radius:8, color:'#0af', fillOpacity:1
+}).addTo(map);
+map.setView([lat,lng],18);
+}else{
+userMarker.setLatLng([lat,lng]);
 }
 
-function setPin() {
-  let center = map.getCenter();
-
-  if (pin) map.removeLayer(pin);
-
-  pin = L.marker(center, {
-    icon: L.divIcon({
-      html: "🏁",
-      className: "",
-      iconSize: [30,30]
-    })
-  }).addTo(map);
-
-  drawRings(center);
-}
-
-function addShot() {
-  if (!pin) return;
-
-  let from = userMarker.getLatLng();
-  let to = pin.getLatLng();
-
-  let line = L.polyline([from, to], {
-    color: 'white',
-    dashArray: '6,6'
-  }).addTo(map);
-
-  shots.push(line);
-
-  score++;
-  document.getElementById("score").innerText = score + " Stroke";
-
-  updateAI();
-}
-
-function removeShot() {
-  let last = shots.pop();
-  if (last) map.removeLayer(last);
-
-  score = Math.max(0, score - 1);
-  document.getElementById("score").innerText = score + " Stroke";
-}
-
-function clearShots() {
-  shots.forEach(s => map.removeLayer(s));
-  shots = [];
-  score = 0;
-  document.getElementById("score").innerText = "0 Stroke";
-}
-
-function updateAI() {
-  let clubs = ["Driver","5 Wood","7 Iron","9 Iron","Wedge"];
-  let club = clubs[Math.floor(Math.random()*clubs.length)];
-
-  document.getElementById("club").innerText = club;
-  document.getElementById("info").innerHTML = `
-    • 120m to pin<br>
-    • Wind adjusted: 125m<br>
-    • Aim center
-  `;
-}
-
-// GPS TRACKING
-navigator.geolocation.watchPosition(pos => {
-  let lat = pos.coords.latitude;
-  let lng = pos.coords.longitude;
-
-  userMarker.setLatLng([lat, lng]);
-  map.setView([lat, lng]);
+updateDistance();
 });
+
+function setPin(){
+let center = map.getCenter();
+if(pinMarker) map.removeLayer(pinMarker);
+
+pinMarker = L.marker(center).addTo(map);
+updateDistance();
+}
+
+function clearShots(){
+shots.forEach(s=>map.removeLayer(s));
+shots=[];
+}
+
+function addShot(){
+if(!userMarker || !pinMarker) return;
+
+let line = L.polyline([
+userMarker.getLatLng(),
+pinMarker.getLatLng()
+], {dashArray:'5,5'}).addTo(map);
+
+shots.push(line);
+score++;
+document.getElementById("score").innerText = score+" Stroke";
+}
+
+function removeShot(){
+if(shots.length){
+map.removeLayer(shots.pop());
+score--;
+document.getElementById("score").innerText = score+" Stroke";
+}
+}
+
+function updateDistance(){
+if(!userMarker || !pinMarker) return;
+
+let d = map.distance(userMarker.getLatLng(), pinMarker.getLatLng());
+
+document.getElementById("dist").innerText = Math.round(d)+" m to pin";
+
+let club = "Driver";
+if(d<150) club="9 Iron";
+if(d<100) club="Wedge";
+
+document.getElementById("club").innerText = club;
+}
+
+function openScorecard(){
+document.getElementById("scorecard").classList.toggle("open");
+}
+
+function prevHole(){ alert("Previous Hole"); }
+function nextHole(){ alert("Next Hole"); }
+
+// generate rows
+for(let i=1;i<=18;i++){
+let row = "<tr>";
+row += `<td>${i}</td>`;
+row += `<td><input></td>`;
+row += `<td><input></td>`;
+row += `<td><input></td>`;
+row += `<td><input></td>`;
+row += `<td><input></td>`;
+row += `<td><select><option>Y</option><option>N</option></select></td>`;
+row += `<td><select><option>Y</option><option>N</option></select></td>`;
+row += `<td><input></td>`;
+row += `<td><input></td>`;
+row += "</tr>";
+
+document.getElementById("card").innerHTML += row;
+}
 </script>
 
 </body>
