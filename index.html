@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Eagle AI Caddie</title>
+<title>EAGLE HAS LANDED</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -127,7 +127,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 
 <div id="map"></div>
 
-<div class="header">🏌️ Eagle AI Caddie</div>
+<div class="header">🏌️ EAGLE HAS LANDED</div>
 <div class="holebar">Hole 1 • Par 4 • 400y</div>
 
 <div class="mapBtns">
@@ -194,9 +194,12 @@ function updateGPS() {
       let d = Math.round(map.distance([lat,lng], holePos));
 
       let club = "Driver";
-      if (d < 200) club = "7 Iron";
-      if (d < 140) club = "9 Iron";
-      if (d < 100) club = "Wedge";
+      if (d < 183) club = "7 Wood";
+      if (d < 151) club = "6 Iron";
+      if (d < 131) club = "7 Iron";
+      if (d < 120) club = "9 Iron";
+      if (d < 105) club = "Pitching Wedge";
+      if (d < 80) club = "Sand Wedge";
 
       document.getElementById("club").innerText = club;
 
