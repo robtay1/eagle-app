@@ -8,73 +8,97 @@
 
 <style>
 body { margin:0; font-family:-apple-system; background:#000; color:white; }
-
 #map { height:100vh; }
 
+/* HEADER */
 .header {
 position:absolute; top:0; width:100%;
-text-align:center; padding:10px;
-background:rgba(0,0,0,0.4);
+text-align:center;
+background:rgba(0,0,0,0.5);
+padding:10px;
 font-weight:bold;
 }
 
 .subheader {
-position:absolute; top:50px; width:100%;
+position:absolute; top:45px; width:100%;
 text-align:center;
 background:rgba(0,0,0,0.4);
 padding:6px;
 }
 
-.ai-card {
-position:absolute; bottom:120px; left:10px; right:10px;
-background:rgba(0,0,0,0.8);
-border-radius:20px;
-padding:20px;
-}
-
-.ai-title { font-size:28px; font-weight:bold; }
-
-.bottom-bar {
-position:absolute; bottom:0; width:100%;
-display:flex;
-}
-
-.btn {
-flex:1; padding:15px; text-align:center;
-font-weight:bold;
-}
-
-.green { background:#0f0; color:black; }
-.red { background:#f33; }
-
-.center { background:#111; }
-
+/* FLOATING BUTTONS */
 .floating {
 position:absolute;
 bottom:260px;
 left:50%;
 transform:translateX(-50%);
 display:flex; gap:10px;
+z-index:1000;
 }
 
 .floating button {
-background:#222;
+background:#1c1c1c;
 border:none;
-padding:10px 15px;
-border-radius:20px;
+padding:10px 18px;
+border-radius:25px;
 color:white;
+font-weight:600;
+box-shadow:0 4px 10px rgba(0,0,0,0.5);
 }
 
+/* AI CARD */
+.ai-card {
+position:absolute;
+bottom:110px;
+left:10px;
+right:10px;
+background:rgba(0,0,0,0.85);
+border-radius:20px;
+padding:18px;
+z-index:1000;
+}
+
+.ai-title {
+font-size:30px;
+font-weight:bold;
+margin-bottom:10px;
+}
+
+/* BOTTOM BAR */
+.bottom-bar {
+position:absolute;
+bottom:0;
+width:100%;
+display:flex;
+z-index:1000;
+}
+
+.btn {
+flex:1;
+padding:16px;
+text-align:center;
+font-weight:bold;
+}
+
+.green { background:#00c853; }
+.red { background:#d50000; }
+.center { background:#111; }
+
+/* ARROWS */
 .arrow {
-position:absolute; top:50%;
-background:#000a;
+position:absolute;
+top:50%;
+transform:translateY(-50%);
+background:rgba(0,0,0,0.6);
 padding:10px;
 border-radius:50%;
+z-index:1000;
 }
 
 .left { left:10px; }
 .right { right:10px; }
 
+/* SCORECARD */
 .scorecard {
 position:fixed;
 right:-100%;
@@ -85,25 +109,38 @@ background:#111;
 transition:0.3s;
 overflow:auto;
 padding:20px;
+z-index:2000;
 }
 
 .scorecard.open { right:0; }
 
-table { width:100%; border-collapse:collapse; }
-td, th { border:1px solid #333; padding:5px; text-align:center; }
+table {
+width:100%;
+border-collapse:collapse;
+margin-top:15px;
+}
+
+th, td {
+border:1px solid #333;
+padding:6px;
+text-align:center;
+}
 
 input, select {
 width:100%;
 background:#222;
 border:none;
 color:white;
+padding:4px;
 }
 
-.top-controls {
+/* BUTTON */
+.score-btn {
 position:absolute;
 bottom:320px;
 left:50%;
 transform:translateX(-50%);
+z-index:1000;
 }
 
 </style>
@@ -118,21 +155,19 @@ transform:translateX(-50%);
 
 <div class="floating">
 <button onclick="setPin()">📍 Set Pin</button>
-<button onclick="clearShots()">🧹 Clear</button>
+<button onclick="clearShots()">🧹 Clear Shots</button>
 </div>
 
-<div class="top-controls">
-<button onclick="openScorecard()">📊 Scorecard</button>
+<div class="score-btn">
+<button onclick="toggleScorecard()">📊 Scorecard</button>
 </div>
 
 <div class="ai-card">
 <div>AI Caddie Advice</div>
 <div class="ai-title" id="club">--</div>
-<ul>
-<li id="dist">--</li>
-<li id="wind">Wind: 5mph →</li>
-<li>Aim center</li>
-</ul>
+<div id="distanceText">--</div>
+<div>Wind: 5mph →</div>
+<div>Aim center</div>
 </div>
 
 <div class="bottom-bar">
@@ -145,17 +180,11 @@ transform:translateX(-50%);
 <div class="arrow right" onclick="nextHole()">➡️</div>
 
 <div class="scorecard" id="scorecard">
-
 <h2>Virtual Scorecard</h2>
 
-<input placeholder="Course Name">
-
-<br><br>
-
+<input placeholder="Course Name"><br><br>
 <input placeholder="Handicap Index">
 <input placeholder="Playing Handicap">
-
-<br><br>
 
 <table id="card">
 <tr>
@@ -164,7 +193,6 @@ transform:translateX(-50%);
 <th>FW</th><th>GIR</th><th>Putts</th><th>Total</th>
 </tr>
 </table>
-
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -172,48 +200,88 @@ transform:translateX(-50%);
 <script>
 let map = L.map('map').setView([51.5,-0.1],18);
 
+// SATELLITE
 L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png').addTo(map);
 
 let userMarker, pinMarker;
+let rings = [];
 let shots = [];
 let score = 0;
 
+// LOCATION
 navigator.geolocation.watchPosition(pos=>{
 let lat = pos.coords.latitude;
 let lng = pos.coords.longitude;
 
 if(!userMarker){
 userMarker = L.circleMarker([lat,lng],{
-radius:8, color:'#0af', fillOpacity:1
+radius:8, color:'#00bfff', fillOpacity:1
 }).addTo(map);
+
 map.setView([lat,lng],18);
 }else{
 userMarker.setLatLng([lat,lng]);
 }
 
+drawRings();
 updateDistance();
 });
 
+// SET PIN
 function setPin(){
 let center = map.getCenter();
+
 if(pinMarker) map.removeLayer(pinMarker);
 
 pinMarker = L.marker(center).addTo(map);
+
+drawRings();
 updateDistance();
 }
 
-function clearShots(){
-shots.forEach(s=>map.removeLayer(s));
-shots=[];
+// RINGS
+function drawRings(){
+rings.forEach(r=>map.removeLayer(r));
+rings=[];
+
+if(!pinMarker) return;
+
+[50,100,150].forEach(d=>{
+let ring = L.circle(pinMarker.getLatLng(),{
+radius:d,
+color:'white',
+fill:false,
+opacity:0.3
+}).addTo(map);
+
+rings.push(ring);
+});
 }
 
+// DISTANCE
+function updateDistance(){
+if(!userMarker || !pinMarker) return;
+
+let d = map.distance(userMarker.getLatLng(), pinMarker.getLatLng());
+
+document.getElementById("distanceText").innerText =
+Math.round(d)+" m to pin";
+
+let club = "Driver";
+if(d<150) club="9 Iron";
+if(d<100) club="Wedge";
+
+document.getElementById("club").innerText = club;
+}
+
+// SHOTS
 function addShot(){
 if(!userMarker || !pinMarker) return;
 
 let line = L.polyline([
 userMarker.getLatLng(),
 pinMarker.getLatLng()
-], {dashArray:'5,5'}).addTo(map);
+], {dashArray:'5,5', color:'white'}).addTo(map);
 
 shots.push(line);
 score++;
@@ -228,28 +296,23 @@ document.getElementById("score").innerText = score+" Stroke";
 }
 }
 
-function updateDistance(){
-if(!userMarker || !pinMarker) return;
-
-let d = map.distance(userMarker.getLatLng(), pinMarker.getLatLng());
-
-document.getElementById("dist").innerText = Math.round(d)+" m to pin";
-
-let club = "Driver";
-if(d<150) club="9 Iron";
-if(d<100) club="Wedge";
-
-document.getElementById("club").innerText = club;
+function clearShots(){
+shots.forEach(s=>map.removeLayer(s));
+shots=[];
+score=0;
+document.getElementById("score").innerText = "0 Stroke";
 }
 
-function openScorecard(){
+// SCORECARD
+function toggleScorecard(){
 document.getElementById("scorecard").classList.toggle("open");
 }
 
+// NAV
 function prevHole(){ alert("Previous Hole"); }
 function nextHole(){ alert("Next Hole"); }
 
-// generate rows
+// BUILD TABLE
 for(let i=1;i<=18;i++){
 let row = "<tr>";
 row += `<td>${i}</td>`;
