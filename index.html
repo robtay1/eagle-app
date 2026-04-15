@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Eagle AI Caddie</title>
+<title>EAGLE HAS LANDED</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
@@ -147,7 +147,7 @@ input, select {
 <!-- MAP VIEW -->
 <div id="map"></div>
 
-<div class="header">🏌️ Eagle AI Caddie</div>
+<div class="header">🏌️ EAGLE HAS LANDED</div>
 <div class="subheader">Hole 1 • Par 4 • 400y</div>
 
 <div class="floating">
@@ -223,10 +223,9 @@ input, select {
 let map = L.map('map').setView([53.8,-2.2], 18);
 
 /* 🔥 HIGH QUALITY SATELLITE */
-L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-  maxZoom: 20
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 19
 }).addTo(map);
-
 /* PRO MARKERS */
 let player = L.circleMarker([53.8,-2.2], {
   radius:8,
@@ -240,7 +239,7 @@ let shots = [];
 
 /* RINGS */
 function drawRings(center){
-  [50,100,150].forEach(r=>{
+  [50,75,100].forEach(r=>{
     L.circle(center,{
       radius:r,
       color:"white",
@@ -266,9 +265,11 @@ function updateDistance(){
   document.getElementById("distance").innerText =
     Math.round(d) + " m to pin";
 
-  let club = d < 100 ? "Wedge" :
-             d < 150 ? "9 Iron" :
-             d < 200 ? "7 Iron" : "Driver";
+  let club = d < 79 ? "Sand Wedge" :
+             d < 115 ? "Pitching Wedge" :
+             d < 130 ? "9 Iron" :
+             d < 145 ? "7 Iron" : 
+             d < 200 ? "7 wood" : Driver";
 
   document.getElementById("club").innerText = club;
 }
