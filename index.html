@@ -32,6 +32,18 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   z-index:1000;
 }
 
+/* WIND */
+.wind {
+  position:absolute;
+  top:90px;
+  right:10px;
+  background:rgba(0,0,0,0.6);
+  padding:6px 10px;
+  border-radius:10px;
+  font-size:13px;
+  z-index:1000;
+}
+
 /* NAV */
 .nav {
   position:absolute;
@@ -97,10 +109,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   box-shadow:0 -5px 20px rgba(0,0,0,0.6);
 }
 
-.card h2 {
-  font-size:36px;
-  margin:5px 0;
-}
+.card h2 { font-size:36px; margin:5px 0; }
 
 .card ul {
   margin-top:10px;
@@ -122,7 +131,6 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   padding:16px;
   border:none;
   font-weight:bold;
-  font-size:15px;
 }
 
 .green { background:#2ecc71; }
@@ -130,7 +138,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 .blue { background:#3498db; }
 .center { background:black; color:white; }
 
-/* LABELS */
+/* LABEL */
 .label {
   background:rgba(0,0,0,0.8);
   color:white;
@@ -147,6 +155,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 
 <div class="header">🏌️ Eagle AI Caddie</div>
 <div class="holebar" id="holeText"></div>
+<div class="wind">🌬️ 5mph →</div>
 
 <div class="nav">
   <button onclick="prevHole()">⬅ Hole</button>
@@ -163,9 +172,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 <div class="card">
   <div>AI Caddie Advice</div>
   <h2 id="club">--</h2>
-  <ul id="advice">
-    <li>Set pin to begin</li>
-  </ul>
+  <ul id="advice"><li>Set pin to begin</li></ul>
 </div>
 
 <div class="bottom">
@@ -185,179 +192,122 @@ L.tileLayer(
 
 /* ICONS */
 let userIcon = L.divIcon({
-  html:'<div style="width:14px;height:14px;background:#00aaff;border-radius:50%;border:3px solid white;"></div>',
-  iconSize:[20,20]
+  html:'<div style="display:flex;align-items:center;gap:4px;"><div style="width:12px;height:12px;background:#00aaff;border-radius:50%;border:3px solid white;"></div><div style="font-size:12px;">YOU</div></div>',
+  iconSize:[40,20]
 });
 
-let flagIcon = L.divIcon({
-  html:'🏁',
-  iconSize:[20,20]
-});
+let flagIcon = L.divIcon({ html:'🏁', iconSize:[20,20] });
 
 /* COURSE */
-let holes = [
-  {par:4, yards:400},
-  {par:3, yards:160},
-  {par:5, yards:520}
-];
+let holes=[{par:4,yards:400},{par:3,yards:160},{par:5,yards:520}];
+let scores=[], currentHole=0;
 
-let scores = [];
-let currentHole = 0;
-
-function updateHoleUI() {
-  let h = holes[currentHole];
-  let score = scores[currentHole] ?? "-";
-
-  document.getElementById("holeText").innerText =
-    `Hole ${currentHole+1} • Par ${h.par} • ${h.yards}y • Score: ${score}`;
+function updateHoleUI(){
+let h=holes[currentHole];
+let s=scores[currentHole]??"-";
+document.getElementById("holeText").innerText=
+`Hole ${currentHole+1} • Par ${h.par} • ${h.yards}y • Score: ${s}`;
 }
 updateHoleUI();
 
 /* NAV */
-function nextHole() {
-  currentHole = (currentHole + 1) % holes.length;
-  resetHole();
-}
+function nextHole(){currentHole=(currentHole+1)%holes.length;resetHole();}
+function prevHole(){currentHole=(currentHole-1+holes.length)%holes.length;resetHole();}
+function resetHole(){clearShots();holePos=null;if(holeMarker)map.removeLayer(holeMarker);updateHoleUI();}
 
-function prevHole() {
-  currentHole = (currentHole - 1 + holes.length) % holes.length;
-  resetHole();
-}
-
-/* RESET */
-function resetHole() {
-  clearShots();
-  holePos = null;
-  if (holeMarker) map.removeLayer(holeMarker);
-  updateHoleUI();
-}
-
-/* FINISH HOLE */
-function finishHole() {
-  scores[currentHole] = shots.length;
-  alert("Hole complete: " + shots.length + " strokes");
-  nextHole();
+/* FINISH */
+function finishHole(){
+scores[currentHole]=shots.length;
+alert("Hole complete: "+shots.length+" strokes");
+nextHole();
 }
 
 /* GAME */
-let userMarker, holeMarker, holePos=null;
-let rings=[], labels=[], guideLine=null;
-let shots=[], shotLines=[];
+let userMarker,holeMarker,holePos=null;
+let shots=[],shotLines=[],shotLabels=[];
 
-function updateGPS() {
-navigator.geolocation.getCurrentPosition(pos => {
+function updateGPS(){
+navigator.geolocation.getCurrentPosition(pos=>{
+let lat=pos.coords.latitude,lng=pos.coords.longitude;
 
-let lat = pos.coords.latitude;
-let lng = pos.coords.longitude;
-
-if (!userMarker) {
-  userMarker = L.marker([lat,lng], {icon:userIcon}).addTo(map);
-  map.setView([lat,lng],18);
-} else {
-  userMarker.setLatLng([lat,lng]);
+if(!userMarker){
+userMarker=L.marker([lat,lng],{icon:userIcon}).addTo(map);
+map.setView([lat,lng],18);
+}else{
+userMarker.setLatLng([lat,lng]);
 }
 
-if (holePos) {
-
-  let d = Math.round(map.distance([lat,lng], holePos));
-
-  document.getElementById("strip").innerText =
-    "Distance to Pin: " + d + "m";
-
-  let club =
-    d < 100 ? "Wedge" :
-    d < 140 ? "9 Iron" :
-    d < 200 ? "7 Iron" : "Driver";
-
-  document.getElementById("club").innerText = club;
-
-  document.getElementById("advice").innerHTML = `
-    <li>${d}m to pin</li>
-    <li>Wind adjusted: ${d+5}m</li>
-    <li>Aim center</li>
-  `;
-
-  rings.forEach(r => map.removeLayer(r));
-  labels.forEach(l => map.removeLayer(l));
-  rings=[]; labels=[];
-
-  [50,100,150].forEach(radius => {
-
-    let circle = L.circle(holePos, {
-      radius: radius,
-      color:'white',
-      weight:2,
-      fill:false,
-      opacity:0.5
-    }).addTo(map);
-
-    rings.push(circle);
-
-    let label = L.marker([
-      holePos[0],
-      holePos[1] + (radius / 111320)
-    ], {
-      icon: L.divIcon({
-        className:'label',
-        html: radius+"m"
-      })
-    }).addTo(map);
-
-    labels.push(label);
-  });
-
-  if (guideLine) map.removeLayer(guideLine);
-  guideLine = L.polyline([[lat,lng], holePos], {
-    color:'white',
-    weight:3,
-    dashArray:'6,6',
-    opacity:0.7
-  }).addTo(map);
+if(holePos){
+let d=Math.round(map.distance([lat,lng],holePos));
+document.getElementById("strip").innerText="Distance: "+d+"m";
+document.getElementById("club").innerText=
+d<100?"Wedge":d<140?"9 Iron":d<200?"7 Iron":"Driver";
 }
 });
 }
-
 setInterval(updateGPS,2000);
 
 /* PIN */
-function setPin() {
-map.once('click', e => {
-  holePos = [e.latlng.lat, e.latlng.lng];
-  if (holeMarker) map.removeLayer(holeMarker);
-  holeMarker = L.marker(holePos, {icon:flagIcon}).addTo(map);
+function setPin(){
+map.once('click',e=>{
+holePos=[e.latlng.lat,e.latlng.lng];
+if(holeMarker)map.removeLayer(holeMarker);
+holeMarker=L.marker(holePos,{icon:flagIcon}).addTo(map);
 });
 }
 
-/* SHOTS */
-function addShot() {
-if (!userMarker || !holePos) return;
+/* CURVED ARC */
+function createArc(start,end){
+let latlngs=[];
+for(let i=0;i<=20;i++){
+let t=i/20;
+let lat=start.lat+(end.lat-start.lat)*t+0.0002*Math.sin(Math.PI*t);
+let lng=start.lng+(end.lng-start.lng)*t;
+latlngs.push([lat,lng]);
+}
+return latlngs;
+}
 
-let pos = userMarker.getLatLng();
+/* SHOT */
+function addShot(){
+if(!userMarker||!holePos)return;
 
-let line = L.polyline([pos, holePos], {
-  color:'#00ffcc',
-  weight:4
+let start=userMarker.getLatLng();
+let end={lat:holePos[0],lng:holePos[1]};
+
+let arc=createArc(start,end);
+
+let line=L.polyline(arc,{color:'#00ffcc',weight:4}).addTo(map);
+shotLines.push(line);
+
+let dist=Math.round(map.distance(start,[end.lat,end.lng]));
+
+let mid=arc[Math.floor(arc.length/2)];
+
+let label=L.marker(mid,{
+icon:L.divIcon({className:'label',html:dist+"m"})
 }).addTo(map);
 
-shotLines.push(line);
+shotLabels.push(label);
+
 shots.push(1);
-
-document.getElementById("score").innerText = shots.length;
+document.getElementById("score").innerText=shots.length;
 }
 
-function removeShot() {
-if (shotLines.length === 0) return;
-
+/* REMOVE */
+function removeShot(){
+if(shotLines.length===0)return;
 map.removeLayer(shotLines.pop());
+map.removeLayer(shotLabels.pop());
 shots.pop();
-
-document.getElementById("score").innerText = shots.length;
+document.getElementById("score").innerText=shots.length;
 }
 
-function clearShots() {
-shotLines.forEach(l => map.removeLayer(l));
-shotLines=[];
-shots=[];
+/* CLEAR */
+function clearShots(){
+shotLines.forEach(l=>map.removeLayer(l));
+shotLabels.forEach(l=>map.removeLayer(l));
+shotLines=[];shotLabels=[];shots=[];
 document.getElementById("score").innerText="0";
 }
 </script>
