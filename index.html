@@ -1,25 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EAGLE HAS LANDED</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eagle AI Caddie</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
-html, body {
-  margin:0;
-  padding:0;
-  background:black;
-  font-family:-apple-system;
-  color:white;
-}
+body { margin:0; font-family:-apple-system; background:black; color:white; }
 
-/* MAP */
-#map {
-  height:60vh;
-  width:100%;
-}
+#map { position:absolute; height:100vh; width:100%; }
 
 /* HEADER */
 .header {
@@ -27,27 +18,26 @@ html, body {
   top:0;
   width:100%;
   text-align:center;
-  padding:12px;
+  padding:14px;
+  background:rgba(0,0,0,0.6);
   font-weight:bold;
-  font-size:20px;
+  z-index:1000;
+}
+
+.holebar {
+  position:absolute;
+  top:50px;
+  width:100%;
+  text-align:center;
+  padding:6px;
   background:rgba(0,0,0,0.5);
   z-index:1000;
 }
 
-.subheader {
-  position:absolute;
-  top:45px;
-  width:100%;
-  text-align:center;
-  background:rgba(255,255,255,0.2);
-  padding:6px;
-  z-index:1000;
-}
-
 /* FLOATING BUTTONS */
-.floating {
+.mapBtns {
   position:absolute;
-  bottom:180px;
+  bottom:260px;
   width:100%;
   display:flex;
   justify-content:center;
@@ -55,256 +45,256 @@ html, body {
   z-index:1000;
 }
 
-.floating button {
-  background:rgba(0,0,0,0.8);
+.mapBtns button {
+  background:rgba(30,30,30,0.9);
   color:white;
   border:none;
   padding:12px 18px;
-  border-radius:20px;
-  font-size:14px;
+  border-radius:12px;
+  font-weight:bold;
+  box-shadow:0 4px 10px rgba(0,0,0,0.5);
 }
 
-/* AI CARD */
-.ai-card {
+/* DISTANCE STRIP */
+.strip {
   position:absolute;
-  bottom:80px;
-  left:5%;
-  width:90%;
-  background:rgba(0,0,0,0.85);
-  padding:16px;
-  border-radius:16px;
+  bottom:220px;
+  width:100%;
+  text-align:center;
+  background:rgba(0,0,0,0.6);
+  padding:6px;
+  font-size:14px;
   z-index:1000;
 }
 
-.ai-card h1 {
-  margin:0;
-  font-size:32px;
+/* AI CARD */
+.card {
+  position:absolute;
+  bottom:110px;
+  left:10px;
+  right:10px;
+  background:#1c1c1c;
+  border-radius:20px;
+  padding:18px;
+  z-index:1000;
+  box-shadow:0 -5px 20px rgba(0,0,0,0.6);
 }
 
-/* BOTTOM BAR */
-.bottom-bar {
+.card h2 {
+  font-size:36px;
+  margin:5px 0;
+}
+
+.card ul {
+  margin-top:10px;
+  font-size:15px;
+  line-height:1.6;
+}
+
+/* BOTTOM BUTTONS */
+.bottom {
   position:absolute;
   bottom:0;
   width:100%;
   display:flex;
+  z-index:1000;
 }
 
-.bottom-bar button {
+.bottom button {
   flex:1;
-  padding:16px;
+  padding:18px;
   border:none;
+  font-weight:bold;
   font-size:16px;
+}
+
+.green { background:#2ecc71; }
+.red { background:#e74c3c; }
+.center { background:black; color:white; }
+
+/* RING LABELS */
+.label {
+  background:rgba(0,0,0,0.8);
   color:white;
-}
-
-.green {background:#0f0;}
-.red {background:#c00;}
-.dark {background:#111;}
-
-/* SCORECARD */
-#scorecard {
-  display:none;
-  padding:10px;
-}
-
-table {
-  width:100%;
-  border-collapse:collapse;
-}
-
-th, td {
-  border:1px solid #333;
-  padding:6px;
-  text-align:center;
-}
-
-input, select {
-  width:100%;
-  background:black;
-  color:white;
-  border:1px solid #555;
-}
-
-.top-buttons {
-  display:flex;
-  gap:10px;
-  margin-bottom:10px;
-}
-
-.top-buttons button {
-  flex:1;
-  padding:10px;
-  background:#111;
-  color:white;
-  border:none;
+  padding:3px 8px;
   border-radius:8px;
+  font-size:12px;
 }
 </style>
 </head>
 
 <body>
 
-<!-- MAP VIEW -->
 <div id="map"></div>
 
-<div class="header">🏌️ EAGLE HAS LANDED</div>
-<div class="subheader">Hole 1 • Par 4 • 400y</div>
+<div class="header">🏌️ Eagle AI Caddie</div>
+<div class="holebar">Hole 1 • Par 4 • 400y</div>
 
-<div class="floating">
+<div class="mapBtns">
   <button onclick="setPin()">📍 Set Pin</button>
-  <button onclick="clearShots()">🧹 Clear</button>
+  <button onclick="clearShots()">🧹 Clear Shots</button>
 </div>
 
-<div class="ai-card">
+<div class="strip" id="strip">Distance to Pin: --</div>
+
+<div class="card">
   <div>AI Caddie Advice</div>
-  <h1 id="club">-</h1>
-  <div id="distance">-- m to pin</div>
-  <div id="wind">Wind adjusted: --</div>
-  <div>Aim center</div>
+  <h2 id="club">--</h2>
+  <ul id="advice">
+    <li>Set pin to begin</li>
+  </ul>
 </div>
 
-<div class="bottom-bar">
+<div class="bottom">
   <button class="green" onclick="addShot()">+ Add Shot</button>
-  <button class="dark" onclick="openScorecard()">Scorecard</button>
+  <button class="center" id="score">0 Stroke</button>
   <button class="red" onclick="removeShot()">- Remove</button>
 </div>
 
-<!-- SCORECARD -->
-<div id="scorecard">
-  <div class="top-buttons">
-    <button onclick="closeScorecard()">⬅ Back to Caddie</button>
-  </div>
-
-  <h2>Virtual Scorecard</h2>
-
-  <input placeholder="Course Name">
-
-  <div style="display:flex; gap:10px; margin:10px 0;">
-    <input placeholder="Handicap Index">
-    <input placeholder="Playing Handicap">
-  </div>
-
-  <table>
-    <tr>
-      <th>Hole</th><th>Par</th><th>SI</th>
-      <th>White</th><th>Yellow</th><th>Red</th>
-      <th>FW</th><th>GIR</th><th>Putts</th><th>Total</th>
-    </tr>
-
-    <script>
-    for(let i=1;i<=9;i++){
-      document.write(`
-      <tr>
-        <td>${i}</td>
-        <td><input></td>
-        <td><input></td>
-        <td><input></td>
-        <td><input></td>
-        <td><input></td>
-        <td>
-          <select><option>Y</option><option>N</option></select>
-        </td>
-        <td>
-          <select><option>Y</option><option>N</option></select>
-        </td>
-        <td><input></td>
-        <td><input></td>
-      </tr>
-      `);
-    }
-    </script>
-
-  </table>
-</div>
-
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
 <script>
-let map = L.map('map').setView([53.8,-2.2], 18);
+let map = L.map('map');
 
-/* 🔥 HIGH QUALITY SATELLITE */
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-  maxZoom: 19
-}).addTo(map);
-/* PRO MARKERS */
-let player = L.circleMarker([53.8,-2.2], {
-  radius:8,
-  color:"#00f",
-  fillColor:"#00f",
-  fillOpacity:1
-}).addTo(map);
+L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom: 19 }
+).addTo(map);
 
-let pin;
-let shots = [];
+// CUSTOM ICONS
+let userIcon = L.divIcon({
+  html:'<div style="width:14px;height:14px;background:#00aaff;border-radius:50%;border:3px solid white;"></div>',
+  iconSize:[20,20]
+});
 
-/* RINGS */
-function drawRings(center){
-  [50,75,100].forEach(r=>{
-    L.circle(center,{
-      radius:r,
-      color:"white",
-      opacity:0.3,
-      fill:false
-    }).addTo(map);
+let flagIcon = L.divIcon({
+  html:'🏁',
+  iconSize:[20,20]
+});
+
+let userMarker, holeMarker;
+let holePos = null;
+
+let rings = [], labels = [], guideLine = null;
+let shots = [], shotLines = [];
+
+function updateGPS() {
+  navigator.geolocation.getCurrentPosition(pos => {
+
+    let lat = pos.coords.latitude;
+    let lng = pos.coords.longitude;
+
+    if (!userMarker) {
+      userMarker = L.marker([lat,lng], {icon:userIcon}).addTo(map);
+      map.setView([lat,lng],18);
+    } else {
+      userMarker.setLatLng([lat,lng]);
+    }
+
+    if (holePos) {
+
+      let d = Math.round(map.distance([lat,lng], holePos));
+
+      let club = "Driver";
+      if (d < 200) club = "7 Iron";
+      if (d < 140) club = "9 Iron";
+      if (d < 100) club = "Wedge";
+
+      document.getElementById("club").innerText = club;
+
+      document.getElementById("strip").innerText =
+        "Distance to Pin: " + d + "m";
+
+      document.getElementById("advice").innerHTML = `
+        <li>${d}m to pin</li>
+        <li>Wind adjusted: ${d+5}m</li>
+        <li>Aim center</li>
+      `;
+
+      rings.forEach(r => map.removeLayer(r));
+      labels.forEach(l => map.removeLayer(l));
+      rings = [];
+      labels = [];
+
+      [50,100,150].forEach(radius => {
+
+        let circle = L.circle(holePos, {
+          radius: radius,
+          color: 'white',
+          weight: 2,
+          fill:false,
+          opacity:0.5
+        }).addTo(map);
+
+        rings.push(circle);
+
+        let label = L.marker([
+          holePos[0],
+          holePos[1] + (radius / 111320)
+        ], {
+          icon: L.divIcon({
+            className:'label',
+            html: radius + "m"
+          })
+        }).addTo(map);
+
+        labels.push(label);
+      });
+
+      if (guideLine) map.removeLayer(guideLine);
+      guideLine = L.polyline([[lat,lng], holePos], {
+        color:'white',
+        weight:3,
+        dashArray:'6,6',
+        opacity:0.7
+      }).addTo(map);
+    }
+
   });
 }
 
-drawRings(player.getLatLng());
+setInterval(updateGPS,2000);
 
-function setPin(){
-  map.on('click', function(e){
-    if(pin) map.removeLayer(pin);
-    pin = L.marker(e.latlng).addTo(map);
-    updateDistance();
+function setPin() {
+  map.once('click', e => {
+    holePos = [e.latlng.lat, e.latlng.lng];
+
+    if (holeMarker) map.removeLayer(holeMarker);
+    holeMarker = L.marker(holePos, {icon:flagIcon}).addTo(map);
   });
 }
 
-function updateDistance(){
-  if(!pin) return;
-  let d = map.distance(player.getLatLng(), pin.getLatLng());
-  document.getElementById("distance").innerText =
-    Math.round(d) + " m to pin";
+function addShot() {
+  if (!userMarker || !holePos) return;
 
-  let club = d < 79 ? "Sand Wedge" :
-             d < 115 ? "Pitching Wedge" :
-             d < 130 ? "9 Iron" :
-             d < 145 ? "7 Iron" : 
-             d < 200 ? "7 wood" : Driver";
+  let pos = userMarker.getLatLng();
 
-  document.getElementById("club").innerText = club;
-}
-
-function addShot(){
-  if(!pin) return;
-  let shot = L.polyline([player.getLatLng(), pin.getLatLng()],{
-    dashArray:"5,5"
+  let line = L.polyline([pos, holePos], {
+    color:'#00ffcc',
+    weight:4
   }).addTo(map);
-  shots.push(shot);
+
+  shotLines.push(line);
+  shots.push(1);
+
+  document.getElementById("score").innerText =
+    shots.length + " Stroke";
 }
 
-function removeShot(){
-  let s = shots.pop();
-  if(s) map.removeLayer(s);
+function removeShot() {
+  if (shotLines.length === 0) return;
+
+  map.removeLayer(shotLines.pop());
+  shots.pop();
+
+  document.getElementById("score").innerText =
+    shots.length + " Stroke";
 }
 
-function clearShots(){
-  shots.forEach(s=>map.removeLayer(s));
-  shots=[];
-}
+function clearShots() {
+  shotLines.forEach(l => map.removeLayer(l));
+  shotLines = [];
+  shots = [];
 
-function openScorecard(){
-  document.getElementById("map").style.display="none";
-  document.querySelectorAll(".header,.subheader,.floating,.ai-card,.bottom-bar")
-    .forEach(el=>el.style.display="none");
-  document.getElementById("scorecard").style.display="block";
-}
-
-function closeScorecard(){
-  document.getElementById("map").style.display="block";
-  document.querySelectorAll(".header,.subheader,.floating,.ai-card,.bottom-bar")
-    .forEach(el=>el.style.display="block");
-  document.getElementById("scorecard").style.display="block";
-  document.getElementById("scorecard").style.display="none";
+  document.getElementById("score").innerText = "0 Stroke";
 }
 </script>
 
