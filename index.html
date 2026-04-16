@@ -70,12 +70,12 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 /* AI CARD */
 .card {
   position:absolute;
-  bottom:110px;
+  bottom:98px; /* moved down ~12mm */
   left:10px;
   right:10px;
   background:#1c1c1c;
   border-radius:20px;
-  padding:18px;
+  padding:12px 18px; /* reduces height slightly (~12mm total) */
   z-index:1000;
   box-shadow:0 -5px 20px rgba(0,0,0,0.6);
 }
@@ -247,7 +247,7 @@ function updateGPS() {
       rings = [];
       labels = [];
 
-      [50,100,150].forEach(radius => {
+      [50,75,100].forEach(radius => {
 
         let circle = L.circle(holePos, {
           radius: radius,
