@@ -67,30 +67,28 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   z-index:1000;
 }
 
-/* AI CARD — FIXED SIZE (KEY FIX) */
+/* AI CARD */
 .card {
   position:absolute;
-  bottom:72px; /* moved down ~10mm */
+  bottom:110px;
   left:10px;
   right:10px;
-  height:130px; /* fixed height prevents expansion */
   background:#1c1c1c;
   border-radius:20px;
-  padding:16px;
+  padding:18px;
   z-index:1000;
   box-shadow:0 -5px 20px rgba(0,0,0,0.6);
-  overflow:hidden; /* stops layout shift */
 }
 
 .card h2 {
-  font-size:34px;
-  margin:4px 0;
+  font-size:36px;
+  margin:5px 0;
 }
 
 .card ul {
-  margin-top:6px;
-  font-size:14px;
-  line-height:1.4;
+  margin-top:10px;
+  font-size:15px;
+  line-height:1.6;
 }
 
 /* BOTTOM BUTTONS */
@@ -121,60 +119,6 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   padding:3px 8px;
   border-radius:8px;
   font-size:12px;
-}
-
-/* SCORECARD */
-#scorecardScreen {
-  display:none;
-  position:absolute;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:#111;
-  z-index:2000;
-  padding:15px;
-  overflow:auto;
-}
-
-.scoreHeader {
-  font-size:22px;
-  font-weight:bold;
-  margin-bottom:10px;
-}
-
-.scoreInputs {
-  display:flex;
-  gap:10px;
-  margin-bottom:10px;
-}
-
-.scoreInputs input {
-  flex:1;
-  padding:8px;
-  border-radius:6px;
-  border:none;
-}
-
-table {
-  width:100%;
-  border-collapse:collapse;
-  font-size:12px;
-}
-
-th, td {
-  border:1px solid #333;
-  padding:6px;
-  text-align:center;
-}
-
-th {
-  background:#1e7f4f;
-}
-
-.totalRow {
-  background:#1e7f4f;
-  font-weight:bold;
 }
 </style>
 </head>
@@ -208,53 +152,33 @@ th {
   <button class="red" onclick="removeShot()">- Remove</button>
 </div>
 
-<!-- SCORECARD -->
-<div id="scorecardScreen">
+<!-- SCORECARD SCREEN -->
+<div id="scorecardScreen" style="
+  display:none;
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:black;
+  z-index:2000;
+  padding:20px;
+  overflow:auto;
+">
+  <h2>📊 Scorecard</h2>
 
-  <div class="scoreHeader">📊 Virtual Scorecard</div>
+  <button onclick="closeScorecard()" style="
+    padding:10px;
+    margin-bottom:15px;
+    background:#222;
+    color:white;
+    border:none;
+    border-radius:8px;
+  ">
+    ⬅ Back to Caddie
+  </button>
 
-  <button onclick="closeScorecard()">⬅ Back</button>
-
-  <div class="scoreInputs">
-    <input placeholder="Course Name">
-    <input placeholder="Handicap Index">
-    <input placeholder="Playing Handicap">
-  </div>
-
-  <table>
-    <tr>
-      <th>Hole</th><th>Par</th><th>SI</th>
-      <th>White</th><th>Yellow</th><th>Red</th>
-      <th>FW</th><th>GIR</th><th>Putts</th><th>Total</th>
-    </tr>
-
-    <!-- 9 holes -->
-    <script>
-      for(let i=1;i<=9;i++){
-        document.write(`
-          <tr>
-            <td>${i}</td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td><select><option>Y</option><option>N</option></select></td>
-            <td><select><option>Y</option><option>N</option></select></td>
-            <td><input style="width:40px"></td>
-            <td><input style="width:40px"></td>
-          </tr>
-        `);
-      }
-    </script>
-
-    <tr class="totalRow">
-      <td>Total</td>
-      <td></td><td></td><td></td><td></td><td></td>
-      <td></td><td></td><td></td><td></td>
-    </tr>
-  </table>
-
+  <p>This is your scorecard screen (we’ll build this next).</p>
 </div>
 
 <script>
@@ -265,6 +189,7 @@ L.tileLayer(
   { maxZoom: 19 }
 ).addTo(map);
 
+// CUSTOM ICONS
 let userIcon = L.divIcon({
   html:'<div style="width:14px;height:14px;background:#00aaff;border-radius:50%;border:3px solid white;"></div>',
   iconSize:[20,20]
@@ -275,11 +200,15 @@ let flagIcon = L.divIcon({
   iconSize:[20,20]
 });
 
-let userMarker, holeMarker, holePos=null;
-let shots=[], shotLines=[];
+let userMarker, holeMarker;
+let holePos = null;
+
+let rings = [], labels = [], guideLine = null;
+let shots = [], shotLines = [];
 
 function updateGPS() {
   navigator.geolocation.getCurrentPosition(pos => {
+
     let lat = pos.coords.latitude;
     let lng = pos.coords.longitude;
 
@@ -291,10 +220,67 @@ function updateGPS() {
     }
 
     if (holePos) {
+
       let d = Math.round(map.distance([lat,lng], holePos));
-      document.getElementById("club").innerText = "Club";
-      document.getElementById("strip").innerText = "Distance: " + d + "m";
+
+      let club = "Driver";
+      if (d < 183) club = "7 Wood";
+      if (d < 151) club = "6 Iron";
+      if (d < 131) club = "7 Iron";
+      if (d < 120) club = "9 Iron";
+      if (d < 105) club = "Pitching Wedge";
+      if (d < 80) club = "Sand Wedge";
+
+      document.getElementById("club").innerText = club;
+
+      document.getElementById("strip").innerText =
+        "Distance to Pin: " + d + "m";
+
+      document.getElementById("advice").innerHTML = `
+        <li>${d}m to pin</li>
+        <li>Wind adjusted: ${d+5}m</li>
+        <li>Aim center</li>
+      `;
+
+      rings.forEach(r => map.removeLayer(r));
+      labels.forEach(l => map.removeLayer(l));
+      rings = [];
+      labels = [];
+
+      [50,100,150].forEach(radius => {
+
+        let circle = L.circle(holePos, {
+          radius: radius,
+          color: 'white',
+          weight: 2,
+          fill:false,
+          opacity:0.5
+        }).addTo(map);
+
+        rings.push(circle);
+
+        let label = L.marker([
+          holePos[0],
+          holePos[1] + (radius / 111320)
+        ], {
+          icon: L.divIcon({
+            className:'label',
+            html: radius + "m"
+          })
+        }).addTo(map);
+
+        labels.push(label);
+      });
+
+      if (guideLine) map.removeLayer(guideLine);
+      guideLine = L.polyline([[lat,lng], holePos], {
+        color:'white',
+        weight:3,
+        dashArray:'6,6',
+        opacity:0.7
+      }).addTo(map);
     }
+
   });
 }
 
@@ -303,32 +289,62 @@ setInterval(updateGPS,2000);
 function setPin() {
   map.once('click', e => {
     holePos = [e.latlng.lat, e.latlng.lng];
+
     if (holeMarker) map.removeLayer(holeMarker);
     holeMarker = L.marker(holePos, {icon:flagIcon}).addTo(map);
   });
 }
 
-function addShot(){
+function addShot() {
+  if (!userMarker || !holePos) return;
+
+  let pos = userMarker.getLatLng();
+
+  let line = L.polyline([pos, holePos], {
+    color:'#00ffcc',
+    weight:4
+  }).addTo(map);
+
+  shotLines.push(line);
   shots.push(1);
-  document.getElementById("score").innerText = shots.length + " Stroke";
+
+  document.getElementById("score").innerText =
+    shots.length + " Stroke";
 }
 
-function removeShot(){
+function removeShot() {
+  if (shotLines.length === 0) return;
+
+  map.removeLayer(shotLines.pop());
   shots.pop();
-  document.getElementById("score").innerText = shots.length + " Stroke";
+
+  document.getElementById("score").innerText =
+    shots.length + " Stroke";
 }
 
-function clearShots(){
-  shots=[];
-  document.getElementById("score").innerText="0 Stroke";
+function clearShots() {
+  shotLines.forEach(l => map.removeLayer(l));
+  shotLines = [];
+  shots = [];
+
+  document.getElementById("score").innerText = "0 Stroke";
 }
 
-function openScorecard(){
-  document.getElementById("scorecardScreen").style.display="block";
+/* ✅ FIXED SCORECARD FUNCTIONS */
+function openScorecard() {
+  document.getElementById("scorecardScreen").style.display = "block";
+
+  document.querySelectorAll(
+    "#map, .header, .holebar, .mapBtns, .strip, .card, .bottom"
+  ).forEach(el => el.style.display = "none");
 }
 
-function closeScorecard(){
-  document.getElementById("scorecardScreen").style.display="none";
+function closeScorecard() {
+  document.getElementById("scorecardScreen").style.display = "none";
+
+  document.querySelectorAll(
+    "#map, .header, .holebar, .mapBtns, .strip, .card, .bottom"
+  ).forEach(el => el.style.display = "");
 }
 </script>
 
