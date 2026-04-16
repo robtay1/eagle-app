@@ -246,7 +246,7 @@ function updateGPS() {
       rings = [];
       labels = [];
 
-      [50,100,150].forEach(radius => {
+      [50,75,100].forEach(radius => {
         let circle = L.circle(holePos, {
           radius: radius,
           color: 'white',
