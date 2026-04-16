@@ -9,7 +9,6 @@
 
 <style>
 body { margin:0; font-family:-apple-system; background:black; color:white; }
-
 #map { position:absolute; height:100vh; width:100%; }
 
 /* HEADER */
@@ -21,7 +20,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   padding:14px;
   background:rgba(0,0,0,0.6);
   font-weight:bold;
-  z-index:1000;
+  z-index:2000;
 }
 
 .holebar {
@@ -31,7 +30,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   text-align:center;
   padding:6px;
   background:rgba(0,0,0,0.5);
-  z-index:1000;
+  z-index:2000;
 }
 
 /* FLOATING BUTTONS */
@@ -42,7 +41,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   display:flex;
   justify-content:center;
   gap:12px;
-  z-index:1000;
+  z-index:2000;
 }
 
 .mapBtns button {
@@ -64,10 +63,10 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   background:rgba(0,0,0,0.6);
   padding:6px;
   font-size:14px;
-  z-index:1000;
+  z-index:2000;
 }
 
-/* ✅ FIXED AI CARD */
+/* AI CARD */
 .card {
   position:absolute;
   bottom:110px;
@@ -76,23 +75,19 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   background:#1c1c1c;
   border-radius:20px;
   padding:18px;
-  z-index:1000;
+  z-index:2000;
   box-shadow:0 -5px 20px rgba(0,0,0,0.6);
-
-  height:140px;              /* 🔥 lock height */
-  overflow:hidden;           /* 🔥 prevent expansion */
 }
 
 .card h2 {
   font-size:36px;
   margin:5px 0;
-  line-height:1;             /* 🔥 stops growth */
 }
 
 .card ul {
   margin-top:10px;
   font-size:15px;
-  line-height:1.4;
+  line-height:1.6;
 }
 
 /* BOTTOM BUTTONS */
@@ -101,7 +96,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   bottom:0;
   width:100%;
   display:flex;
-  z-index:1000;
+  z-index:2000;
 }
 
 .bottom button {
@@ -165,7 +160,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   width:100%;
   height:100%;
   background:black;
-  z-index:2000;
+  z-index:3000;
   padding:20px;
   overflow:auto;
 ">
@@ -245,6 +240,43 @@ function updateGPS() {
         <li>Wind adjusted: ${d+5}m</li>
         <li>Aim center</li>
       `;
+
+      rings.forEach(r => map.removeLayer(r));
+      labels.forEach(l => map.removeLayer(l));
+      rings = [];
+      labels = [];
+
+      [50,100,150].forEach(radius => {
+        let circle = L.circle(holePos, {
+          radius: radius,
+          color: 'white',
+          weight: 2,
+          fill:false,
+          opacity:0.5
+        }).addTo(map);
+
+        rings.push(circle);
+
+        let label = L.marker([
+          holePos[0],
+          holePos[1] + (radius / 111320)
+        ], {
+          icon: L.divIcon({
+            className:'label',
+            html: radius + "m"
+          })
+        }).addTo(map);
+
+        labels.push(label);
+      });
+
+      if (guideLine) map.removeLayer(guideLine);
+      guideLine = L.polyline([[lat,lng], holePos], {
+        color:'white',
+        weight:3,
+        dashArray:'6,6',
+        opacity:0.7
+      }).addTo(map);
     }
 
   });
@@ -262,13 +294,26 @@ function setPin() {
 }
 
 function addShot() {
+  if (!userMarker || !holePos) return;
+
+  let pos = userMarker.getLatLng();
+
+  let line = L.polyline([pos, holePos], {
+    color:'#00ffcc',
+    weight:4
+  }).addTo(map);
+
+  shotLines.push(line);
   shots.push(1);
+
   document.getElementById("score").innerText =
     shots.length + " Stroke";
 }
 
 function removeShot() {
-  if (shots.length === 0) return;
+  if (shotLines.length === 0) return;
+
+  map.removeLayer(shotLines.pop());
   shots.pop();
 
   document.getElementById("score").innerText =
@@ -276,7 +321,10 @@ function removeShot() {
 }
 
 function clearShots() {
+  shotLines.forEach(l => map.removeLayer(l));
+  shotLines = [];
   shots = [];
+
   document.getElementById("score").innerText = "0 Stroke";
 }
 
@@ -295,6 +343,7 @@ function closeScorecard() {
     "#map, .header, .holebar, .mapBtns, .strip, .card, .bottom"
   ).forEach(el => el.style.display = "block");
 }
+
 </script>
 
 </body>
