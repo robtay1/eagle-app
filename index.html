@@ -9,7 +9,6 @@
 
 <style>
 body { margin:0; font-family:-apple-system; background:black; color:white; }
-
 #map { position:absolute; height:100vh; width:100%; }
 
 /* HEADER */
@@ -133,6 +132,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 <div class="mapBtns">
   <button onclick="setPin()">📍 Set Pin</button>
   <button onclick="clearShots()">🧹 Clear Shots</button>
+  <button onclick="openScorecard()">📊 Scorecard</button>
 </div>
 
 <div class="strip" id="strip">Distance to Pin: --</div>
@@ -149,6 +149,35 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   <button class="green" onclick="addShot()">+ Add Shot</button>
   <button class="center" id="score">0 Stroke</button>
   <button class="red" onclick="removeShot()">- Remove</button>
+</div>
+
+<!-- ✅ SCORECARD SCREEN (correct place) -->
+<div id="scorecardScreen" style="
+  display:none;
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:black;
+  z-index:2000;
+  padding:20px;
+  overflow:auto;
+">
+  <h2>📊 Scorecard</h2>
+
+  <button onclick="closeScorecard()" style="
+    padding:10px;
+    margin-bottom:15px;
+    background:#222;
+    color:white;
+    border:none;
+    border-radius:8px;
+  ">
+    ⬅ Back to Caddie
+  </button>
+
+  <p>This is your scorecard screen (we’ll build this next).</p>
 </div>
 
 <script>
@@ -218,7 +247,6 @@ function updateGPS() {
       labels = [];
 
       [50,100,150].forEach(radius => {
-
         let circle = L.circle(holePos, {
           radius: radius,
           color: 'white',
@@ -299,6 +327,24 @@ function clearShots() {
 
   document.getElementById("score").innerText = "0 Stroke";
 }
+
+/* ✅ CORRECT PLACE FOR THESE FUNCTIONS */
+function openScorecard() {
+  document.getElementById("scorecardScreen").style.display = "block";
+
+  document.querySelectorAll(
+    "#map, .header, .holebar, .mapBtns, .strip, .card, .bottom"
+  ).forEach(el => el.style.display = "none");
+}
+
+function closeScorecard() {
+  document.getElementById("scorecardScreen").style.display = "none";
+
+  document.querySelectorAll(
+    "#map, .header, .holebar, .mapBtns, .strip, .card, .bottom"
+  ).forEach(el => el.style.display = "block");
+}
+
 </script>
 
 </body>
