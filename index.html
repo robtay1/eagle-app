@@ -9,7 +9,21 @@
 
 <style>
 body { margin:0; font-family:-apple-system; background:black; color:white; }
-#map { position:absolute; height:100vh; width:100%; }
+
+/* ✅ FIX: force map behind UI */
+#map {
+  position:absolute;
+  height:100vh;
+  width:100%;
+  z-index:0;
+}
+
+/* ✅ FIX: force all leaflet layers behind UI */
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom {
+  z-index:0 !important;
+}
 
 /* HEADER */
 .header {
