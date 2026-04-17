@@ -112,7 +112,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 .red { background:#e74c3c; }
 .center { background:black; color:white; }
 
-/* LABEL FIX */
+/* LABEL */
 .label {
   background:rgba(0,0,0,0.8);
   color:white;
@@ -148,69 +148,44 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 </div>
 
 <div class="bottom">
-  <button class="green" onclick="addShot()">+ Add Shot</button>
+  <button class="green" onclick="addShotLine()">+ Add Shot</button>
   <button class="center" id="score">0 Stroke</button>
   <button class="red" onclick="removeShot()">- Remove</button>
 </div>
 
-<!-- SCORECARD SCREEN (UNCHANGED) -->
-<div id="scorecardScreen" style="
-  display:none;
-  position:absolute;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:#0f0f0f;
-  z-index:2000;
-  padding:16px;
-  overflow:auto;
-">
+<!-- SCORECARD -->
+<div id="scorecardScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:#0f0f0f;z-index:2000;padding:16px;overflow:auto;">
 
-  <h2 style="text-align:center;">Virtual Scorecard</h2>
+<h2 style="text-align:center;">Virtual Scorecard</h2>
 
-  <button onclick="closeScorecard()" style="
-    padding:10px;
-    margin-bottom:15px;
-    background:#1f1f1f;
-    color:white;
-    border:none;
-    border-radius:10px;">
-    ⬅ Back to Caddie
-  </button>
+<button onclick="closeScorecard()">⬅ Back</button>
 
-  <div style="overflow-x:auto;">
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
-      <tbody id="scoreRows"></tbody>
-    </table>
-  </div>
+<div style="overflow-x:auto;">
+<table style="width:100%;">
+<tbody id="scoreRows"></tbody>
+</table>
 </div>
 
-<!-- PRACTICE SCREEN -->
-<div id="practiceScreen" style="
-  display:none;
-  position:absolute;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:black;
-  z-index:2000;
-  padding:20px;
-  overflow:auto;
-">
+</div>
 
-  <h2>🎯 Practice / Shot Distance</h2>
+<!-- PRACTICE -->
+<div id="practiceScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:black;z-index:2000;padding:20px;overflow:auto;">
 
-  <button onclick="closePractice()">⬅ Back</button>
+<h2>🎯 Practice</h2>
+<button onclick="closePractice()">⬅ Back</button>
 
-  <div id="clubsList"></div>
+<div id="clubsList"></div>
 
-  <div style="margin-top:20px;">
-    <input id="clubName" placeholder="Club (e.g. 7 Iron)">
-    <input id="clubDist" placeholder="Distance (m)" type="number">
-    <button onclick="addClub()">Add Club</button>
-  </div>
+<hr>
+
+<input id="clubName" placeholder="Club name">
+<button onclick="addClub()">Add Club</button>
+
+<br><br>
+
+<select id="clubSelect"></select>
+<input id="clubDist" type="number" placeholder="Shot distance">
+<button onclick="addShot()">Add Shot</button>
 
 </div>
 
@@ -219,7 +194,8 @@ let map = L.map('map');
 
 L.tileLayer(
 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-{ maxZoom: 19 }).addTo(map);
+{ maxZoom: 19 }
+).addTo(map);
 
 let userMarker, holeMarker, holePos=null;
 let rings=[], labels=[], guideLine=null;
@@ -234,10 +210,21 @@ function saveClubs(){
 }
 
 function addClub(){
-  let name=document.getElementById("clubName").value;
-  let dist=parseInt(document.getElementById("clubDist").value);
-  if(!name||!dist) return;
-  clubs[name]=dist;
+  let name=document.getElementById("clubName").value.trim();
+  if(!name) return;
+  if(!clubs[name]) clubs[name]={shots:[],avg:0};
+  saveClubs();
+}
+
+function addShot(){
+  let club=document.getElementById("clubSelect").value;
+  let dist=Number(document.getElementById("clubDist").value);
+  if(!club||!dist) return;
+
+  clubs[club].shots.push(dist);
+  let total=clubs[club].shots.reduce((a,b)=>a+b,0);
+  clubs[club].avg=Math.round(total/clubs[club].shots.length);
+
   saveClubs();
 }
 
@@ -248,14 +235,42 @@ function removeClub(name){
 
 function renderClubs(){
   let html="";
+  let select=document.getElementById("clubSelect");
+  if(select) select.innerHTML="";
+
   for(let c in clubs){
-    html+=`<div>${c} - ${clubs[c]}m <button onclick="removeClub('${c}')">X</button></div>`;
+    let avg=clubs[c].avg||0;
+    let count=clubs[c].shots.length;
+
+    html+=`<div><b>${c}</b> ${avg}m (${count}) <button onclick="removeClub('${c}')">X</button></div>`;
+
+    if(select){
+      let opt=document.createElement("option");
+      opt.value=c;
+      opt.textContent=c;
+      select.appendChild(opt);
+    }
   }
   document.getElementById("clubsList").innerHTML=html;
 }
-renderClubs();
+
+window.onload=function(){
+  renderClubs();
+
+  let scoreHTML="";
+  for(let i=1;i<=9;i++){
+    scoreHTML+=`<tr><td>${i}</td><td><input></td></tr>`;
+  }
+  document.getElementById("scoreRows").innerHTML=scoreHTML;
+};
 
 // NAV
+function openScorecard(){
+  document.getElementById("scorecardScreen").style.display="block";
+}
+function closeScorecard(){
+  document.getElementById("scorecardScreen").style.display="none";
+}
 function openPractice(){
   document.getElementById("practiceScreen").style.display="block";
 }
@@ -277,18 +292,20 @@ if(holePos){
 
 let d=Math.round(map.distance([lat,lng],holePos));
 
-// USE USER CLUB DATA
+// AI CLUB
 let best="Driver";
 let diff=9999;
 for(let c in clubs){
-let cd=clubs[c];
-if(Math.abs(cd-d)<diff){ diff=Math.abs(cd-d); best=c;}
+let avg=clubs[c].avg;
+if(!avg) continue;
+let cd=Math.abs(avg-d);
+if(cd<diff){diff=cd;best=c;}
 }
 document.getElementById("club").innerText=best;
 
 document.getElementById("strip").innerText="Distance: "+d+"m";
 
-// RINGS FIX
+// RINGS
 rings.forEach(r=>map.removeLayer(r));
 labels.forEach(l=>map.removeLayer(l));
 rings=[];labels=[];
@@ -305,6 +322,7 @@ guideLine=L.polyline([[lat,lng],holePos]).addTo(map);
 }
 });
 }
+
 setInterval(updateGPS,2000);
 
 function setPin(){
@@ -313,6 +331,28 @@ holePos=[e.latlng.lat,e.latlng.lng];
 if(holeMarker) map.removeLayer(holeMarker);
 holeMarker=L.marker(holePos).addTo(map);
 });
+}
+
+function addShotLine(){
+if(!userMarker||!holePos) return;
+let pos=userMarker.getLatLng();
+let line=L.polyline([pos,holePos],{color:'#00ffcc'}).addTo(map);
+shotLines.push(line);
+shots.push(1);
+document.getElementById("score").innerText=shots.length+" Stroke";
+}
+
+function removeShot(){
+if(shotLines.length===0) return;
+map.removeLayer(shotLines.pop());
+shots.pop();
+document.getElementById("score").innerText=shots.length+" Stroke";
+}
+
+function clearShots(){
+shotLines.forEach(l=>map.removeLayer(l));
+shotLines=[];shots=[];
+document.getElementById("score").innerText="0 Stroke";
 }
 </script>
 
