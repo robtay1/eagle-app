@@ -134,7 +134,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   <button onclick="setPin()">📍 Set Pin</button>
   <button onclick="clearShots()">🧹 Clear Shots</button>
   <button onclick="openScorecard()">📊 Scorecard</button>
-  <button onclick="openPractice()">🎯 Practice</button> <!-- ✅ ADDED -->
+  <button onclick="openPractice()">🎯 Practice</button>
 </div>
 
 <div class="strip" id="strip">Distance to Pin: --</div>
@@ -153,13 +153,51 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   <button class="red" onclick="removeShot()">- Remove</button>
 </div>
 
-<!-- SCORECARD (UNCHANGED) -->
-<div id="scorecardScreen" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:#0f0f0f; z-index:2000; padding:16px;">
-  <h2>Scorecard</h2>
-  <button onclick="closeScorecard()">⬅ Back</button>
+<!-- SCORECARD -->
+<div id="scorecardScreen" style="
+  display:none;
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:#0f0f0f;
+  z-index:2000;
+  padding:16px;
+  overflow:auto;
+">
+
+  <h2 style="text-align:center;">Virtual Scorecard</h2>
+
+  <button onclick="closeScorecard()" style="
+    padding:10px;
+    margin-bottom:15px;
+    background:#1f1f1f;
+    color:white;
+    border:none;
+    border-radius:10px;
+  ">⬅ Back to Caddie</button>
+
+  <div style="display:flex; gap:10px; margin-bottom:10px;">
+    <input placeholder="Handicap Index" style="flex:1;padding:10px;border:none;border-radius:8px;background:#1c1c1c;color:white;">
+    <input placeholder="Playing Handicap" style="flex:1;padding:10px;border:none;border-radius:8px;background:#1c1c1c;color:white;">
+  </div>
+
+  <input placeholder="Enter Course Name" style="width:100%;padding:10px;margin-bottom:10px;border:none;border-radius:8px;background:#1c1c1c;color:white;">
+
+  <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <thead>
+      <tr style="background:#145a32;">
+        <th>Hole</th><th>Par</th><th>SI</th><th>W</th><th>Y</th><th>R</th>
+        <th>FW</th><th>GIR</th><th>Putts</th><th>Total</th>
+      </tr>
+    </thead>
+    <tbody id="scoreRows"></tbody>
+  </table>
+
 </div>
 
-<!-- ✅ PRACTICE SCREEN (NEW) -->
+<!-- PRACTICE -->
 <div id="practiceScreen" style="
   display:none;
   position:absolute;
@@ -180,9 +218,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
     color:white;
     border:none;
     border-radius:8px;
-  ">
-    ⬅ Back to Caddie
-  </button>
+  ">⬅ Back to Caddie</button>
 </div>
 
 <script>
@@ -193,7 +229,6 @@ L.tileLayer(
   { maxZoom: 19 }
 ).addTo(map);
 
-// ICONS
 let userIcon = L.divIcon({
   html:'<div style="width:14px;height:14px;background:#00aaff;border-radius:50%;border:3px solid white;"></div>',
   iconSize:[20,20]
@@ -210,25 +245,16 @@ let holePos = null;
 let rings = [], labels = [], guideLine = null;
 let shots = [], shotLines = [];
 
+// SCORECARD BUILD (FIXED)
+let scoreHTML = "";
+for (let i = 1; i <= 9; i++) {
+  scoreHTML += `<tr><td>${i}</td><td><input></td><td><input></td><td><input></td><td><input></td><td><input></td><td><select><option>Yes</option><option>No</option></select></td><td><select><option>Yes</option><option>No</option></select></td><td><input></td><td><input></td></tr>`;
+}
+window.onload = () => {
+  document.getElementById("scoreRows").innerHTML = scoreHTML;
+};
+
 // NAV
-function openScorecard() {
-  document.getElementById("scorecardScreen").style.display = "block";
-  hideMain();
-}
-function closeScorecard() {
-  document.getElementById("scorecardScreen").style.display = "none";
-  showMain();
-}
-
-function openPractice() {
-  document.getElementById("practiceScreen").style.display = "block";
-  hideMain();
-}
-function closePractice() {
-  document.getElementById("practiceScreen").style.display = "none";
-  showMain();
-}
-
 function hideMain() {
   document.querySelectorAll("#map, .header, .holebar, .mapBtns, .strip, .card, .bottom")
     .forEach(el => el.style.display = "none");
@@ -241,7 +267,27 @@ function showMain() {
   setTimeout(() => map.invalidateSize(), 200);
 }
 
-// MAP LOGIC (UNCHANGED)
+function openScorecard() {
+  document.getElementById("scorecardScreen").style.display = "block";
+  hideMain();
+}
+
+function closeScorecard() {
+  document.getElementById("scorecardScreen").style.display = "none";
+  showMain();
+}
+
+function openPractice() {
+  document.getElementById("practiceScreen").style.display = "block";
+  hideMain();
+}
+
+function closePractice() {
+  document.getElementById("practiceScreen").style.display = "none";
+  showMain();
+}
+
+// MAP
 function updateGPS() {
   navigator.geolocation.getCurrentPosition(pos => {
 
@@ -253,6 +299,21 @@ function updateGPS() {
       map.setView([lat,lng],18);
     } else {
       userMarker.setLatLng([lat,lng]);
+    }
+
+    if (holePos) {
+
+      let d = Math.round(map.distance([lat,lng], holePos));
+
+      document.getElementById("strip").innerText = "Distance to Pin: " + d + "m";
+
+      rings.forEach(r => map.removeLayer(r));
+      rings = [];
+
+      [50,100,150].forEach(radius => {
+        rings.push(L.circle(holePos,{radius:radius,color:'white',fill:false}).addTo(map));
+      });
+
     }
 
   });
@@ -268,9 +329,25 @@ function setPin() {
   });
 }
 
-function addShot() {}
-function removeShot() {}
-function clearShots() {}
+function addShot() {
+  if (!userMarker || !holePos) return;
+  let pos = userMarker.getLatLng();
+  let line = L.polyline([pos, holePos]).addTo(map);
+  shotLines.push(line); shots.push(1);
+  document.getElementById("score").innerText = shots.length + " Stroke";
+}
+
+function removeShot() {
+  if (!shotLines.length) return;
+  map.removeLayer(shotLines.pop()); shots.pop();
+  document.getElementById("score").innerText = shots.length + " Stroke";
+}
+
+function clearShots() {
+  shotLines.forEach(l => map.removeLayer(l));
+  shotLines = []; shots = [];
+  document.getElementById("score").innerText = "0 Stroke";
+}
 </script>
 
 </body>
