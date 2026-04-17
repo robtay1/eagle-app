@@ -287,8 +287,10 @@ for (let i = 1; i <= 9; i++) {
       <td><input type="number" style="width:55px"></td>
     </tr>`;
 }
-document.getElementById("scoreRows").innerHTML = scoreHTML;
-
+window.onload = function() {
+  document.getElementById("scoreRows").innerHTML = scoreHTML;
+};
+  
 // NAVIGATION
 function openScorecard() {
   document.getElementById("scorecardScreen").style.display = "block";
