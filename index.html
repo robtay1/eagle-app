@@ -300,10 +300,14 @@ function openScorecard() {
 
 function closeScorecard() {
   document.getElementById("scorecardScreen").style.display = "none";
+
   document.querySelectorAll("#map, .header, .holebar, .mapBtns, .strip, .card, .bottom")
     .forEach(el => el.style.display = "block");
-}
 
+  setTimeout(() => {
+    map.invalidateSize();
+  }, 200);
+}
 function openPractice() {
   document.getElementById("practiceScreen").style.display = "block";
   document.querySelectorAll("#map, .header, .holebar, .mapBtns, .strip, .card, .bottom")
@@ -312,10 +316,14 @@ function openPractice() {
 
 function closePractice() {
   document.getElementById("practiceScreen").style.display = "none";
+
   document.querySelectorAll("#map, .header, .holebar, .mapBtns, .strip, .card, .bottom")
     .forEach(el => el.style.display = "block");
-}
 
+  setTimeout(() => {
+    map.invalidateSize();
+  }, 200);
+}
 // MAP LOGIC (UNCHANGED)
 function updateGPS() {
   navigator.geolocation.getCurrentPosition(pos => {
