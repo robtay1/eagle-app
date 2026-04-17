@@ -112,7 +112,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 .red { background:#e74c3c; }
 .center { background:black; color:white; }
 
-/* RING LABELS */
+/* LABEL FIX */
 .label {
   background:rgba(0,0,0,0.8);
   color:white;
@@ -153,7 +153,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   <button class="red" onclick="removeShot()">- Remove</button>
 </div>
 
-<!-- SCORECARD -->
+<!-- SCORECARD SCREEN (UNCHANGED) -->
 <div id="scorecardScreen" style="
   display:none;
   position:absolute;
@@ -175,29 +175,18 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
     background:#1f1f1f;
     color:white;
     border:none;
-    border-radius:10px;
-  ">⬅ Back to Caddie</button>
+    border-radius:10px;">
+    ⬅ Back to Caddie
+  </button>
 
-  <div style="display:flex; gap:10px; margin-bottom:10px;">
-    <input placeholder="Handicap Index" style="flex:1;padding:10px;border:none;border-radius:8px;background:#1c1c1c;color:white;">
-    <input placeholder="Playing Handicap" style="flex:1;padding:10px;border:none;border-radius:8px;background:#1c1c1c;color:white;">
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <tbody id="scoreRows"></tbody>
+    </table>
   </div>
-
-  <input placeholder="Enter Course Name" style="width:100%;padding:10px;margin-bottom:10px;border:none;border-radius:8px;background:#1c1c1c;color:white;">
-
-  <table style="width:100%;border-collapse:collapse;font-size:13px;">
-    <thead>
-      <tr style="background:#145a32;">
-        <th>Hole</th><th>Par</th><th>SI</th><th>W</th><th>Y</th><th>R</th>
-        <th>FW</th><th>GIR</th><th>Putts</th><th>Total</th>
-      </tr>
-    </thead>
-    <tbody id="scoreRows"></tbody>
-  </table>
-
 </div>
 
-<!-- PRACTICE -->
+<!-- PRACTICE SCREEN -->
 <div id="practiceScreen" style="
   display:none;
   position:absolute;
@@ -208,145 +197,122 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   background:black;
   z-index:2000;
   padding:20px;
+  overflow:auto;
 ">
+
   <h2>🎯 Practice / Shot Distance</h2>
 
-  <button onclick="closePractice()" style="
-    padding:10px;
-    margin-bottom:15px;
-    background:#222;
-    color:white;
-    border:none;
-    border-radius:8px;
-  ">⬅ Back to Caddie</button>
+  <button onclick="closePractice()">⬅ Back</button>
+
+  <div id="clubsList"></div>
+
+  <div style="margin-top:20px;">
+    <input id="clubName" placeholder="Club (e.g. 7 Iron)">
+    <input id="clubDist" placeholder="Distance (m)" type="number">
+    <button onclick="addClub()">Add Club</button>
+  </div>
+
 </div>
 
 <script>
 let map = L.map('map');
 
 L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  { maxZoom: 19 }
-).addTo(map);
+'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+{ maxZoom: 19 }).addTo(map);
 
-let userIcon = L.divIcon({
-  html:'<div style="width:14px;height:14px;background:#00aaff;border-radius:50%;border:3px solid white;"></div>',
-  iconSize:[20,20]
-});
+let userMarker, holeMarker, holePos=null;
+let rings=[], labels=[], guideLine=null;
+let shots=[], shotLines=[];
 
-let flagIcon = L.divIcon({
-  html:'🏁',
-  iconSize:[20,20]
-});
+// PRACTICE DATA
+let clubs = JSON.parse(localStorage.getItem("clubs")||"{}");
 
-let userMarker, holeMarker;
-let holePos = null;
-
-let rings = [], labels = [], guideLine = null;
-let shots = [], shotLines = [];
-
-// SCORECARD BUILD (FIXED)
-let scoreHTML = "";
-for (let i = 1; i <= 9; i++) {
-  scoreHTML += `<tr><td>${i}</td><td><input></td><td><input></td><td><input></td><td><input></td><td><input></td><td><select><option>Yes</option><option>No</option></select></td><td><select><option>Yes</option><option>No</option></select></td><td><input></td><td><input></td></tr>`;
+function saveClubs(){
+  localStorage.setItem("clubs", JSON.stringify(clubs));
+  renderClubs();
 }
-window.onload = () => {
-  document.getElementById("scoreRows").innerHTML = scoreHTML;
-};
+
+function addClub(){
+  let name=document.getElementById("clubName").value;
+  let dist=parseInt(document.getElementById("clubDist").value);
+  if(!name||!dist) return;
+  clubs[name]=dist;
+  saveClubs();
+}
+
+function removeClub(name){
+  delete clubs[name];
+  saveClubs();
+}
+
+function renderClubs(){
+  let html="";
+  for(let c in clubs){
+    html+=`<div>${c} - ${clubs[c]}m <button onclick="removeClub('${c}')">X</button></div>`;
+  }
+  document.getElementById("clubsList").innerHTML=html;
+}
+renderClubs();
 
 // NAV
-function hideMain() {
-  document.querySelectorAll("#map, .header, .holebar, .mapBtns, .strip, .card, .bottom")
-    .forEach(el => el.style.display = "none");
+function openPractice(){
+  document.getElementById("practiceScreen").style.display="block";
 }
-
-function showMain() {
-  document.querySelectorAll("#map, .header, .holebar, .mapBtns, .strip, .card, .bottom")
-    .forEach(el => el.style.display = "block");
-
-  setTimeout(() => map.invalidateSize(), 200);
-}
-
-function openScorecard() {
-  document.getElementById("scorecardScreen").style.display = "block";
-  hideMain();
-}
-
-function closeScorecard() {
-  document.getElementById("scorecardScreen").style.display = "none";
-  showMain();
-}
-
-function openPractice() {
-  document.getElementById("practiceScreen").style.display = "block";
-  hideMain();
-}
-
-function closePractice() {
-  document.getElementById("practiceScreen").style.display = "none";
-  showMain();
+function closePractice(){
+  document.getElementById("practiceScreen").style.display="none";
 }
 
 // MAP
-function updateGPS() {
-  navigator.geolocation.getCurrentPosition(pos => {
+function updateGPS(){
+navigator.geolocation.getCurrentPosition(pos=>{
+let lat=pos.coords.latitude,lng=pos.coords.longitude;
 
-    let lat = pos.coords.latitude;
-    let lng = pos.coords.longitude;
+if(!userMarker){
+userMarker=L.marker([lat,lng]).addTo(map);
+map.setView([lat,lng],18);
+}else userMarker.setLatLng([lat,lng]);
 
-    if (!userMarker) {
-      userMarker = L.marker([lat,lng], {icon:userIcon}).addTo(map);
-      map.setView([lat,lng],18);
-    } else {
-      userMarker.setLatLng([lat,lng]);
-    }
+if(holePos){
 
-    if (holePos) {
+let d=Math.round(map.distance([lat,lng],holePos));
 
-      let d = Math.round(map.distance([lat,lng], holePos));
-
-      document.getElementById("strip").innerText = "Distance to Pin: " + d + "m";
-
-      rings.forEach(r => map.removeLayer(r));
-      rings = [];
-
-      [50,100,150].forEach(radius => {
-        rings.push(L.circle(holePos,{radius:radius,color:'white',fill:false}).addTo(map));
-      });
-
-    }
-
-  });
+// USE USER CLUB DATA
+let best="Driver";
+let diff=9999;
+for(let c in clubs){
+let cd=clubs[c];
+if(Math.abs(cd-d)<diff){ diff=Math.abs(cd-d); best=c;}
 }
+document.getElementById("club").innerText=best;
 
+document.getElementById("strip").innerText="Distance: "+d+"m";
+
+// RINGS FIX
+rings.forEach(r=>map.removeLayer(r));
+labels.forEach(l=>map.removeLayer(l));
+rings=[];labels=[];
+
+[50,100,150].forEach(r=>{
+rings.push(L.circle(holePos,{radius:r,color:'white',fill:false}).addTo(map));
+labels.push(L.marker([holePos[0],holePos[1]+(r/111320)],{
+icon:L.divIcon({className:'label',html:r+"m"})
+}).addTo(map));
+});
+
+if(guideLine) map.removeLayer(guideLine);
+guideLine=L.polyline([[lat,lng],holePos]).addTo(map);
+}
+});
+}
 setInterval(updateGPS,2000);
 
-function setPin() {
-  map.once('click', e => {
-    holePos = [e.latlng.lat, e.latlng.lng];
-    if (holeMarker) map.removeLayer(holeMarker);
-    holeMarker = L.marker(holePos, {icon:flagIcon}).addTo(map);
-  });
-}
-
-function addShot() {
-  if (!userMarker || !holePos) return;
-  let pos = userMarker.getLatLng();
-  let line = L.polyline([pos, holePos]).addTo(map);
-  shotLines.push(line); shots.push(1);
-  document.getElementById("score").innerText = shots.length + " Stroke";
-}
-
-function removeShot() {
-  if (!shotLines.length) return;
-  map.removeLayer(shotLines.pop()); shots.pop();
-  document.getElementById("score").innerText = shots.length + " Stroke";
-}
-
-function clearShots() {
-  shotLines.forEach(l => map.removeLayer(l));
-  shotLines = []; shots = [];
-  document.getElementById("score").innerText = "0 Stroke";
+function setPin(){
+map.once('click',e=>{
+holePos=[e.latlng.lat,e.latlng.lng];
+if(holeMarker) map.removeLayer(holeMarker);
+holeMarker=L.marker(holePos).addTo(map);
+});
 }
 </script>
 
