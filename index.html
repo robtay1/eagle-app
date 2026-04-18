@@ -173,7 +173,7 @@ let map = L.map('map');
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}).addTo(map);
 
 let userMarker, holeMarker, holePos=null;
-let rings=[],labels=[],guideLine=null,dispersion-circle=null;
+let rings=[],labels=[],guideLine=null,dispersion-Circle=null;
 let shots=[],shotLines=[];
 
 /* SCORECARD */
@@ -263,8 +263,12 @@ icon:L.divIcon({className:'label',html:r+"m"})
 }).addTo(map));
 });
 
-if(guideLine)map.removeLayer(guideLine);
-guideLine=L.polyline([[lat,lng],holePos],{dashArray:'6,6'}).addTo(map);
+if(guideLine) map.removeLayer(guideLine);
+
+guideLine = L.polyline([[lat,lng], holePos], {
+  dashArray:'6,6'
+}).addTo(map);
+
 // REMOVE OLD DISPERSION
 if (dispersionCircle) map.removeLayer(dispersionCircle);
 
@@ -276,13 +280,12 @@ if(clubs.length > 0){
   });
 
   dispersionCircle = L.circle(holePos, {
-    radius: best.dispersion,
+    radius: best.dispersion || 20,
     color: '#00ffcc',
     fillColor: '#00ffcc',
     fillOpacity: 0.2
   }).addTo(map);
-});
-}
+}}
 setInterval(updateGPS,2000);
 
 /* MAP ACTIONS */
