@@ -173,7 +173,7 @@ let map = L.map('map');
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}).addTo(map);
 
 let userMarker, holeMarker, holePos=null;
-let rings=[],labels=[],guideLine=null;
+let rings=[],labels=[],guideLine=null,dispersion-circle=null;
 let shots=[],shotLines=[];
 
 /* SCORECARD */
@@ -265,6 +265,23 @@ icon:L.divIcon({className:'label',html:r+"m"})
 
 if(guideLine)map.removeLayer(guideLine);
 guideLine=L.polyline([[lat,lng],holePos],{dashArray:'6,6'}).addTo(map);
+// REMOVE OLD DISPERSION
+if (dispersionCircle) map.removeLayer(dispersionCircle);
+
+// DRAW NEW DISPERSION
+if(clubs.length > 0){
+
+  let best = clubs.reduce((prev, curr) => {
+    return Math.abs(curr.dist - d) < Math.abs(prev.dist - d) ? curr : prev;
+  });
+
+  dispersionCircle = L.circle(holePos, {
+    radius: best.dispersion,
+    color: '#00ffcc',
+    fillColor: '#00ffcc',
+    fillOpacity: 0.2
+  }).addTo(map);
+}
 }
 });
 }
@@ -310,7 +327,7 @@ function addClub(){
 
   if(!name || !dist) return;
 
-  clubs.push({name, dist});
+  clubs.push({name, dist,dispersion:20});
 
   localStorage.setItem("clubs", JSON.stringify(clubs));
 
