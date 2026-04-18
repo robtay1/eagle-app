@@ -237,15 +237,21 @@ if(holePos){
 let d=Math.round(map.distance([lat,lng],holePos));
 document.getElementById("strip").innerText="Distance: "+d+"m";
 
-let club="Driver";
-if(d<180)club="7 Wood";
-if(d<150)club="6 Iron";
-if(d<130)club="7 Iron";
-if(d<110)club="9 Iron";
-if(d<90)club="PW";
+let club = "--";
 
-document.getElementById("club").innerText=club;
+if(clubs.length > 0){
 
+  let best = clubs.reduce((prev, curr) => {
+    return Math.abs(curr.dist - d) < Math.abs(prev.dist - d) ? curr : prev;
+  });
+
+  club = best.name;
+
+}else{
+  club = "Add clubs in Practice";
+}
+
+document.getElementById("club").innerText = club;
 rings.forEach(r=>map.removeLayer(r));
 labels.forEach(l=>map.removeLayer(l));
 rings=[];labels=[];
