@@ -9,7 +9,6 @@
 
 <style>
 body { margin:0; font-family:-apple-system; background:black; color:white; }
-
 #map { position:absolute; height:100vh; width:100%; }
 
 /* HEADER */
@@ -20,7 +19,6 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   text-align:center;
   padding:14px;
   background:rgba(0,0,0,0.6);
-  font-weight:bold;
   z-index:1000;
 }
 
@@ -34,7 +32,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   z-index:1000;
 }
 
-/* FLOATING BUTTONS */
+/* BUTTONS */
 .mapBtns {
   position:absolute;
   bottom:260px;
@@ -52,10 +50,9 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   padding:12px 18px;
   border-radius:12px;
   font-weight:bold;
-  box-shadow:0 4px 10px rgba(0,0,0,0.5);
 }
 
-/* DISTANCE STRIP */
+/* DISTANCE */
 .strip {
   position:absolute;
   bottom:220px;
@@ -63,7 +60,6 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   text-align:center;
   background:rgba(0,0,0,0.6);
   padding:6px;
-  font-size:14px;
   z-index:1000;
 }
 
@@ -77,21 +73,9 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   border-radius:20px;
   padding:12px 18px;
   z-index:1000;
-  box-shadow:0 -5px 20px rgba(0,0,0,0.6);
 }
 
-.card h2 {
-  font-size:36px;
-  margin:5px 0;
-}
-
-.card ul {
-  margin-top:10px;
-  font-size:15px;
-  line-height:1.6;
-}
-
-/* BOTTOM BUTTONS */
+/* BOTTOM */
 .bottom {
   position:absolute;
   bottom:0;
@@ -105,20 +89,16 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   padding:18px;
   border:none;
   font-weight:bold;
-  font-size:16px;
 }
 
 .green { background:#2ecc71; }
 .red { background:#e74c3c; }
 .center { background:black; color:white; }
 
-/* LABEL */
 .label {
-  background:rgba(0,0,0,0.8);
-  color:white;
-  padding:3px 8px;
-  border-radius:8px;
-  font-size:12px;
+  background:black;
+  padding:3px 6px;
+  border-radius:6px;
 }
 </style>
 </head>
@@ -127,158 +107,123 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 
 <div id="map"></div>
 
-<div class="header">🏌️ EAGLE HAS LANDED</div>
+<div class="header">🏌️ Eagle AI Caddie</div>
 <div class="holebar">Hole 1 • Par 4 • 400y</div>
 
 <div class="mapBtns">
   <button onclick="setPin()">📍 Set Pin</button>
-  <button onclick="clearShots()">🧹 Clear Shots</button>
+  <button onclick="clearShots()">🧹 Clear</button>
   <button onclick="openScorecard()">📊 Scorecard</button>
   <button onclick="openPractice()">🎯 Practice</button>
 </div>
 
-<div class="strip" id="strip">Distance to Pin: --</div>
+<div class="strip" id="strip">Distance: --</div>
 
 <div class="card">
-  <div>AI Caddie Advice</div>
+  <div>AI Caddie</div>
   <h2 id="club">--</h2>
-  <ul id="advice">
-    <li>Set pin to begin</li>
-  </ul>
+  <ul id="advice"><li>Set pin</li></ul>
 </div>
 
 <div class="bottom">
-  <button class="green" onclick="addShotLine()">+ Add Shot</button>
-  <button class="center" id="score">0 Stroke</button>
-  <button class="red" onclick="removeShot()">- Remove</button>
+  <button class="green" onclick="addShot()">+ Shot</button>
+  <button class="center" id="score">0</button>
+  <button class="red" onclick="removeShot()">-</button>
 </div>
 
 <!-- SCORECARD -->
-<div id="scorecardScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:#0f0f0f;z-index:2000;padding:16px;overflow:auto;">
+<div id="scorecardScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:black;z-index:2000;overflow:auto;padding:10px;">
 
-<h2 style="text-align:center;">Virtual Scorecard</h2>
-
+<h2>Scorecard</h2>
 <button onclick="closeScorecard()">⬅ Back</button>
 
-<div style="overflow-x:auto;">
-<table style="width:100%;">
+<div>
+<label><input type="radio" name="tee">White</label>
+<label><input type="radio" name="tee">Yellow</label>
+<label><input type="radio" name="tee">Red</label>
+</div>
+
+<table style="width:100%;border-collapse:collapse;">
+<thead>
+<tr>
+<th>H</th><th>W</th><th>Y</th><th>R</th><th>Par</th><th>SI</th><th>Score</th><th>P</th><th>FW</th><th>G</th>
+</tr>
+</thead>
 <tbody id="scoreRows"></tbody>
 </table>
-</div>
 
 </div>
 
 <!-- PRACTICE -->
-<div id="practiceScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:black;z-index:2000;padding:20px;overflow:auto;">
+<div id="practiceScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:black;z-index:2000;padding:20px;">
 
-<h2>🎯 Practice</h2>
+<h2>Practice</h2>
 <button onclick="closePractice()">⬅ Back</button>
 
-<div id="clubsList"></div>
+<div id="clubs"></div>
 
-<hr>
-
-<input id="clubName" placeholder="Club name">
-<button onclick="addClub()">Add Club</button>
-
-<br><br>
-
-<select id="clubSelect"></select>
-<input id="clubDist" type="number" placeholder="Shot distance">
-<button onclick="addShot()">Add Shot</button>
+<input id="clubName" placeholder="Club">
+<input id="clubDist" placeholder="Distance">
+<button onclick="addClub()">Add</button>
 
 </div>
 
 <script>
 let map = L.map('map');
-
-L.tileLayer(
-'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-{ maxZoom: 19 }
-).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}).addTo(map);
 
 let userMarker, holeMarker, holePos=null;
-let rings=[], labels=[], guideLine=null;
-let shots=[], shotLines=[];
+let rings=[],labels=[],guideLine=null;
+let shots=[],shotLines=[];
 
-// PRACTICE DATA
-let clubs = JSON.parse(localStorage.getItem("clubs")||"{}");
-
-function saveClubs(){
-  localStorage.setItem("clubs", JSON.stringify(clubs));
-  renderClubs();
+/* SCORECARD */
+let html="";
+for(let i=1;i<=18;i++){
+html+=`<tr>
+<td>${i}</td>
+<td><input></td>
+<td><input></td>
+<td><input></td>
+<td><input></td>
+<td><input></td>
+<td><input></td>
+<td><input></td>
+<td><select><option>Y</option><option>N</option></select></td>
+<td><select><option>Y</option><option>N</option></select></td>
+</tr>`;
 }
+window.onload=()=>document.getElementById("scoreRows").innerHTML=html;
 
-function addClub(){
-  let name=document.getElementById("clubName").value.trim();
-  if(!name) return;
-  if(!clubs[name]) clubs[name]={shots:[],avg:0};
-  saveClubs();
-}
-
-function addShot(){
-  let club=document.getElementById("clubSelect").value;
-  let dist=Number(document.getElementById("clubDist").value);
-  if(!club||!dist) return;
-
-  clubs[club].shots.push(dist);
-  let total=clubs[club].shots.reduce((a,b)=>a+b,0);
-  clubs[club].avg=Math.round(total/clubs[club].shots.length);
-
-  saveClubs();
-}
-
-function removeClub(name){
-  delete clubs[name];
-  saveClubs();
-}
-
-function renderClubs(){
-  let html="";
-  let select=document.getElementById("clubSelect");
-  if(select) select.innerHTML="";
-
-  for(let c in clubs){
-    let avg=clubs[c].avg||0;
-    let count=clubs[c].shots.length;
-
-    html+=`<div><b>${c}</b> ${avg}m (${count}) <button onclick="removeClub('${c}')">X</button></div>`;
-
-    if(select){
-      let opt=document.createElement("option");
-      opt.value=c;
-      opt.textContent=c;
-      select.appendChild(opt);
-    }
-  }
-  document.getElementById("clubsList").innerHTML=html;
-}
-
-window.onload=function(){
-  renderClubs();
-
-  let scoreHTML="";
-  for(let i=1;i<=9;i++){
-    scoreHTML+=`<tr><td>${i}</td><td><input></td></tr>`;
-  }
-  document.getElementById("scoreRows").innerHTML=scoreHTML;
-};
-
-// NAV
+/* NAV */
 function openScorecard(){
-  document.getElementById("scorecardScreen").style.display="block";
+document.getElementById("scorecardScreen").style.display="block";
+hideMain();
 }
 function closeScorecard(){
-  document.getElementById("scorecardScreen").style.display="none";
-}
-function openPractice(){
-  document.getElementById("practiceScreen").style.display="block";
-}
-function closePractice(){
-  document.getElementById("practiceScreen").style.display="none";
+document.getElementById("scorecardScreen").style.display="none";
+showMain();
 }
 
-// MAP
+function openPractice(){
+document.getElementById("practiceScreen").style.display="block";
+hideMain();
+}
+function closePractice(){
+document.getElementById("practiceScreen").style.display="none";
+showMain();
+}
+
+function hideMain(){
+document.querySelectorAll("#map,.header,.holebar,.mapBtns,.strip,.card,.bottom")
+.forEach(el=>el.style.display="none");
+}
+function showMain(){
+document.querySelectorAll("#map,.header,.holebar,.mapBtns,.strip,.card,.bottom")
+.forEach(el=>el.style.display="block");
+setTimeout(()=>map.invalidateSize(),200);
+}
+
+/* GPS */
 function updateGPS(){
 navigator.geolocation.getCurrentPosition(pos=>{
 let lat=pos.coords.latitude,lng=pos.coords.longitude;
@@ -289,23 +234,18 @@ map.setView([lat,lng],18);
 }else userMarker.setLatLng([lat,lng]);
 
 if(holePos){
-
 let d=Math.round(map.distance([lat,lng],holePos));
-
-// AI CLUB
-let best="Driver";
-let diff=9999;
-for(let c in clubs){
-let avg=clubs[c].avg;
-if(!avg) continue;
-let cd=Math.abs(avg-d);
-if(cd<diff){diff=cd;best=c;}
-}
-document.getElementById("club").innerText=best;
-
 document.getElementById("strip").innerText="Distance: "+d+"m";
 
-// RINGS
+let club="Driver";
+if(d<180)club="7 Wood";
+if(d<150)club="6 Iron";
+if(d<130)club="7 Iron";
+if(d<110)club="9 Iron";
+if(d<90)club="PW";
+
+document.getElementById("club").innerText=club;
+
 rings.forEach(r=>map.removeLayer(r));
 labels.forEach(l=>map.removeLayer(l));
 rings=[];labels=[];
@@ -317,42 +257,62 @@ icon:L.divIcon({className:'label',html:r+"m"})
 }).addTo(map));
 });
 
-if(guideLine) map.removeLayer(guideLine);
-guideLine=L.polyline([[lat,lng],holePos]).addTo(map);
+if(guideLine)map.removeLayer(guideLine);
+guideLine=L.polyline([[lat,lng],holePos],{dashArray:'6,6'}).addTo(map);
 }
 });
 }
-
 setInterval(updateGPS,2000);
 
+/* MAP ACTIONS */
 function setPin(){
 map.once('click',e=>{
 holePos=[e.latlng.lat,e.latlng.lng];
-if(holeMarker) map.removeLayer(holeMarker);
+if(holeMarker)map.removeLayer(holeMarker);
 holeMarker=L.marker(holePos).addTo(map);
 });
 }
 
-function addShotLine(){
-if(!userMarker||!holePos) return;
+function addShot(){
+if(!userMarker||!holePos)return;
 let pos=userMarker.getLatLng();
-let line=L.polyline([pos,holePos],{color:'#00ffcc'}).addTo(map);
+let line=L.polyline([pos,holePos]).addTo(map);
 shotLines.push(line);
 shots.push(1);
-document.getElementById("score").innerText=shots.length+" Stroke";
+document.getElementById("score").innerText=shots.length;
 }
 
 function removeShot(){
-if(shotLines.length===0) return;
+if(!shotLines.length)return;
 map.removeLayer(shotLines.pop());
 shots.pop();
-document.getElementById("score").innerText=shots.length+" Stroke";
+document.getElementById("score").innerText=shots.length;
 }
 
 function clearShots(){
 shotLines.forEach(l=>map.removeLayer(l));
 shotLines=[];shots=[];
-document.getElementById("score").innerText="0 Stroke";
+document.getElementById("score").innerText=0;
+}
+
+/* PRACTICE */
+let clubs=[];
+function addClub(){
+let name=document.getElementById("clubName").value;
+let dist=document.getElementById("clubDist").value;
+clubs.push({name,dist});
+renderClubs();
+}
+function renderClubs(){
+let html="";
+clubs.forEach((c,i)=>{
+html+=`<div>${c.name} - ${c.dist}m <button onclick="removeClub(${i})">X</button></div>`;
+});
+document.getElementById("clubs").innerHTML=html;
+}
+function removeClub(i){
+clubs.splice(i,1);
+renderClubs();
 }
 </script>
 
