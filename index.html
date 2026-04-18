@@ -296,25 +296,43 @@ document.getElementById("score").innerText=0;
 }
 
 /* PRACTICE */
-let clubs=[];
+let clubs = JSON.parse(localStorage.getItem("clubs") || "[]");
+
 function addClub(){
-let name=document.getElementById("clubName").value;
-let dist=document.getElementById("clubDist").value;
-clubs.push({name,dist});
-renderClubs();
+  let name = document.getElementById("clubName").value;
+  let dist = parseInt(document.getElementById("clubDist").value);
+
+  if(!name || !dist) return;
+
+  clubs.push({name, dist});
+
+  localStorage.setItem("clubs", JSON.stringify(clubs));
+
+  renderClubs();
 }
+
 function renderClubs(){
-let html="";
-clubs.forEach((c,i)=>{
-html+=`<div>${c.name} - ${c.dist}m <button onclick="removeClub(${i})">X</button></div>`;
-});
-document.getElementById("clubs").innerHTML=html;
+  let html = "";
+
+  clubs.forEach((c,i)=>{
+    html += `
+    <div>
+      ${c.name} - ${c.dist}m
+      <button onclick="removeClub(${i})">X</button>
+    </div>`;
+  });
+
+  document.getElementById("clubs").innerHTML = html;
 }
+
 function removeClub(i){
-clubs.splice(i,1);
-renderClubs();
+  clubs.splice(i,1);
+  localStorage.setItem("clubs", JSON.stringify(clubs));
+  renderClubs();
 }
-</script>
+
+// LOAD ON START
+renderClubs();</script>
 
 </body>
 </html>
