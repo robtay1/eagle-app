@@ -7,7 +7,6 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-<!-- OCR -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <style>
@@ -52,7 +51,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 .card {
   position:absolute; bottom:98px; left:10px; right:10px;
   background:#1c1c1c; border-radius:20px;
-  padding:12px 18px; z-index:1000;
+  padding:16px; z-index:1000;
 }
 
 .bottom {
@@ -108,7 +107,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 
 .distBox {
   border:1px solid rgba(255,255,255,0.3);
-  padding:6px 12px;
+  padding:6px 10px;
   border-radius:10px;
   font-weight:bold;
 }
@@ -119,6 +118,32 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   color:white;
   width:50px;
   text-align:right;
+}
+
+.removeBtn {
+  background:none;
+  border:none;
+  color:#ff6b6b;
+  font-size:18px;
+}
+
+/* CADDiE */
+.caddieHeader {
+  text-align:center;
+  font-size:14px;
+  opacity:0.7;
+  margin-bottom:6px;
+}
+
+.clubMain {
+  font-size:32px;
+  font-weight:bold;
+  margin-bottom:10px;
+}
+
+.caddieList div {
+  margin:6px 0;
+  font-size:14px;
 }
 </style>
 </head>
@@ -133,16 +158,20 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 <div class="mapBtns">
 <button onclick="setPin()">📍 Set Pin</button>
 <button onclick="clearShots()">🧹 Clear</button>
-<button onclick="openScorecard()">📊 Scorecard</button>
 <button onclick="openPractice()">🎯 Practice</button>
 </div>
 
 <div class="strip" id="strip">Distance: --</div>
 
 <div class="card">
-<div>AI Caddie</div>
-<h2 id="club">--</h2>
-<ul id="advice"><li>Set pin</li></ul>
+<div class="caddieHeader">AI Caddie Advice</div>
+<div class="clubMain" id="club">--</div>
+<div class="caddieList">
+<div>⛳ <span id="distToPin">--</span></div>
+<div>🌬 Wind adj: <span id="wind">--</span></div>
+<div>🎯 Aim: <span id="aim">Center</span></div>
+<div>⚙️ Tip: <span id="tip">--</span></div>
+</div>
 </div>
 
 <div class="bottom">
@@ -159,6 +188,10 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 <h3>Import from Toptracer</h3>
 <input type="file" id="imgUpload" accept="image/*">
 <button onclick="handleImage()">📷 Import</button>
+
+<button onclick="resetClubs()" style="margin-top:10px;background:#e74c3c;color:white;padding:8px 12px;border:none;border-radius:8px;">
+Reset All Clubs
+</button>
 
 <pre id="ocrOutput" style="font-size:10px;"></pre>
 
@@ -205,7 +238,7 @@ map.setView([lat,lng],18);
 
 if(holePos){
 let d=Math.round(map.distance([lat,lng],holePos));
-document.getElementById("strip").innerText="Distance: "+d+"m";
+document.getElementById("strip").innerText="Distance to Pin: "+d+"m";
 
 let club="--";
 if(clubs.length>0){
@@ -218,7 +251,17 @@ return cs<ps?c:p;
 club=best.name;
 }else club="Add clubs";
 
-document.getElementById("club").innerText=club;
+document.getElementById("club").innerText = club;
+document.getElementById("distToPin").innerText = d + "m";
+
+let windAdj = d + 6;
+document.getElementById("wind").innerText = windAdj + "m";
+
+let aim = Math.random() > 0.5 ? "Left edge" : "Center";
+document.getElementById("aim").innerText = aim;
+
+let tip = d > 180 ? "Take more club" : d < 100 ? "Control swing" : "Smooth swing";
+document.getElementById("tip").innerText = tip;
 }
 });
 
@@ -231,10 +274,23 @@ holeMarker=L.marker(holePos).addTo(map);
 });
 }
 
-/* CLUB DATA */
+/* SHOTS */
+function addShot(){
+shots.push(1);
+document.getElementById("score").innerText=shots.length;
+}
+function removeShot(){
+shots.pop();
+document.getElementById("score").innerText=shots.length;
+}
+function clearShots(){
+shots=[];
+document.getElementById("score").innerText=0;
+}
+
+/* CLUBS */
 let clubs = JSON.parse(localStorage.getItem("clubs") || "[]");
 
-/* ICONS */
 function getClubIcon(name){
 name=name.toLowerCase();
 if(name.includes("driver")) return "🏌️‍♂️";
@@ -242,6 +298,27 @@ if(name.includes("wood")) return "🪵";
 if(name.includes("iron")) return "⛳";
 if(name.includes("wedge")) return "🔻";
 return "🏌️";
+}
+
+function updateClubDist(name,val){
+let club=clubs.find(c=>c.name===name);
+if(!club) return;
+club.dist=parseInt(val);
+localStorage.setItem("clubs",JSON.stringify(clubs));
+}
+
+function removeClub(name){
+clubs = clubs.filter(c => c.name !== name);
+localStorage.setItem("clubs", JSON.stringify(clubs));
+renderClubs();
+}
+
+function resetClubs(){
+if(confirm("Delete all clubs?")){
+clubs=[];
+localStorage.removeItem("clubs");
+renderClubs();
+}
 }
 
 /* OCR */
@@ -259,25 +336,15 @@ previewImport(parsed);
 function parseToptracer(text){
 let lines=text.split('\n');
 let res=[];
-
 lines.forEach(l=>{
 let m=l.match(/([A-Za-z0-9\s]+)\s+(\d{2,3})/);
 if(m){
-let name=cleanClubName(m[1]);
+let name=m[1].trim();
 let dist=parseInt(m[2]);
 if(dist>50 && dist<350) res.push({name,dist});
 }
 });
 return res;
-}
-
-function cleanClubName(name){
-name=name.toLowerCase();
-if(name.includes("driver")) return "Driver";
-if(name.includes("wood")) return name.match(/\d/)?name.match(/\d/)[0]+"-wood":"Wood";
-if(name.match(/[5-9]/)) return name.match(/[5-9]/)[0]+"-iron";
-if(name.includes("pw")) return "Pitching Wedge";
-return name;
 }
 
 function previewImport(data){
@@ -299,14 +366,6 @@ clubs.push({name,dist,dispersion:20});
 }
 localStorage.setItem("clubs",JSON.stringify(clubs));
 renderClubs();
-}
-
-/* EDIT */
-function updateClubDist(name,val){
-let club=clubs.find(c=>c.name===name);
-if(!club) return;
-club.dist=parseInt(val);
-localStorage.setItem("clubs",JSON.stringify(clubs));
 }
 
 /* RENDER */
@@ -333,6 +392,7 @@ h+=`<div class="clubRow">
 <div class="distBox">
 <input value="${c.dist}" onchange="updateClubDist('${c.name}',this.value)"> m
 </div>
+<button class="removeBtn" onclick="removeClub('${c.name}')">✕</button>
 </div>
 </div>`;
 });
@@ -352,10 +412,8 @@ for(let i=0;i<sorted.length-1;i++){
 let gap=sorted[i].dist-sorted[i+1].dist;
 html+=`<div style="font-size:12px;opacity:0.7">
 ${sorted[i].name} → ${sorted[i+1].name}: ${gap}m`;
-
 if(gap<5) html+=" ⚠️ overlap";
 if(gap>20) html+=" ⚠️ large gap";
-
 html+="</div>";
 }
 
