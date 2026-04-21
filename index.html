@@ -6,13 +6,11 @@
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <style>
 body { margin:0; font-family:-apple-system; background:black; color:white; }
 
-/* MAP FIX */
 #map {
   position:absolute;
   top:0;
@@ -20,7 +18,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   width:100%;
 }
 
-/* UI */
+/* HEADER */
 .header {
   position:absolute; top:0; width:100%; text-align:center;
   padding:14px; background:rgba(0,0,0,0.6); z-index:1000;
@@ -31,72 +29,111 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   padding:6px; background:rgba(0,0,0,0.5); z-index:1000;
 }
 
+/* BUTTONS */
 .mapBtns {
-  position:absolute; bottom:260px; width:100%;
-  display:flex; justify-content:center; gap:12px; z-index:1000;
+  position:absolute;
+  bottom:250px;
+  width:100%;
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  z-index:1100;
 }
 
 .mapBtns button {
   background:rgba(30,30,30,0.9);
-  color:white; border:none; padding:12px 18px;
-  border-radius:12px; font-weight:bold;
+  color:white;
+  border:none;
+  padding:12px 18px;
+  border-radius:12px;
+  font-weight:bold;
 }
 
+/* DISTANCE STRIP */
 .strip {
-  position:absolute; bottom:220px; width:100%;
-  text-align:center; background:rgba(0,0,0,0.6);
-  padding:6px; z-index:1000;
+  position:absolute;
+  bottom:210px;
+  width:100%;
+  text-align:center;
+  background:rgba(0,0,0,0.6);
+  padding:6px;
+  z-index:1100;
 }
 
+/* CADDiE CARD */
 .card {
-  position:absolute; bottom:98px; left:10px; right:10px;
-  background:#1c1c1c; border-radius:20px;
-  padding:16px; z-index:1000;
+  position:absolute;
+  bottom:110px;
+  left:10px;
+  right:10px;
+  background:#1c1c1c;
+  border-radius:20px;
+  padding:14px;
+  z-index:900;
 }
 
+.caddieHeader {
+  text-align:center;
+  font-size:14px;
+  opacity:0.7;
+}
+
+.clubMain {
+  font-size:26px;
+  font-weight:bold;
+  margin:8px 0;
+}
+
+.caddieList div {
+  margin:4px 0;
+  font-size:13px;
+}
+
+/* BOTTOM BAR */
 .bottom {
-  position:absolute; bottom:0; width:100%;
-  display:flex; z-index:1000;
+  position:absolute;
+  bottom:0;
+  width:100%;
+  display:flex;
+  z-index:1200;
 }
 
-.bottom button { flex:1; padding:18px; border:none; font-weight:bold; }
+.bottom button {
+  flex:1;
+  padding:18px;
+  border:none;
+  font-weight:bold;
+}
 
 .green { background:#2ecc71; }
 .red { background:#e74c3c; }
 .center { background:black; color:white; }
 
-.label { background:black; padding:3px 6px; border-radius:6px; }
+.label {
+  background:black;
+  padding:3px 6px;
+  border-radius:6px;
+}
 
-/* PRACTICE UI */
+/* PRACTICE */
 .group { margin-top:20px; }
 
 .groupTitle {
   font-size:14px;
   opacity:0.7;
-  margin-bottom:8px;
 }
 
 .clubRow {
   display:flex;
   justify-content:space-between;
   align-items:center;
-  padding:14px 0;
+  padding:12px 0;
   border-bottom:1px solid rgba(255,255,255,0.1);
-}
-
-.clubLeft {
-  display:flex;
-  flex-direction:column;
 }
 
 .clubName {
   font-size:18px;
   font-weight:600;
-}
-
-.clubSub {
-  font-size:12px;
-  opacity:0.5;
 }
 
 .clubRight {
@@ -105,18 +142,11 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   gap:10px;
 }
 
-.distBox {
-  border:1px solid rgba(255,255,255,0.3);
-  padding:6px 10px;
-  border-radius:10px;
-  font-weight:bold;
-}
-
 .distBox input {
+  width:50px;
   background:transparent;
   border:none;
   color:white;
-  width:50px;
   text-align:right;
 }
 
@@ -125,25 +155,6 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   border:none;
   color:#ff6b6b;
   font-size:18px;
-}
-
-/* CADDiE */
-.caddieHeader {
-  text-align:center;
-  font-size:14px;
-  opacity:0.7;
-  margin-bottom:6px;
-}
-
-.clubMain {
-  font-size:32px;
-  font-weight:bold;
-  margin-bottom:10px;
-}
-
-.caddieList div {
-  margin:6px 0;
-  font-size:14px;
 }
 </style>
 </head>
@@ -185,21 +196,13 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 <h2>Practice</h2>
 <button onclick="closePractice()">⬅ Back</button>
 
-<h3>Import from Toptracer</h3>
-<input type="file" id="imgUpload" accept="image/*">
-<button onclick="handleImage()">📷 Import</button>
+<input type="file" id="imgUpload">
+<button onclick="handleImage()">Import</button>
 
-<button onclick="resetClubs()" style="margin-top:10px;background:#e74c3c;color:white;padding:8px 12px;border:none;border-radius:8px;">
-Reset All Clubs
-</button>
+<button onclick="resetClubs()">Reset All</button>
 
-<pre id="ocrOutput" style="font-size:10px;"></pre>
-
+<pre id="ocrOutput"></pre>
 <div id="clubs"></div>
-
-<input id="clubName" placeholder="Club">
-<input id="clubDist" placeholder="Distance">
-<button onclick="addClub()">Add</button>
 </div>
 
 <script>
@@ -211,21 +214,8 @@ L.tileLayer(
 ).addTo(map);
 
 let userMarker, holeMarker, holePos=null;
-let shots=[],shotLines=[];
-
-/* NAV */
-function openPractice(){ document.getElementById("practiceScreen").style.display="block"; hideMain(); }
-function closePractice(){ document.getElementById("practiceScreen").style.display="none"; showMain(); }
-
-function hideMain(){
-document.querySelectorAll("#map,.header,.holebar,.mapBtns,.strip,.card,.bottom")
-.forEach(el=>el.style.display="none");
-}
-function showMain(){
-document.querySelectorAll("#map,.header,.holebar,.mapBtns,.strip,.card,.bottom")
-.forEach(el=>el.style.display="block");
-setTimeout(()=>map.invalidateSize(),500);
-}
+let rings=[], labels=[], guideLine=null;
+let shots=[];
 
 /* GPS */
 navigator.geolocation.watchPosition(pos=>{
@@ -238,30 +228,38 @@ map.setView([lat,lng],18);
 
 if(holePos){
 let d=Math.round(map.distance([lat,lng],holePos));
+
 document.getElementById("strip").innerText="Distance to Pin: "+d+"m";
+document.getElementById("distToPin").innerText=d+"m";
 
-let club="--";
-if(clubs.length>0){
-let adjusted=d+5;
-let best=clubs.reduce((p,c)=>{
-let ps=Math.abs(p.dist-adjusted)+(p.dispersion||20);
-let cs=Math.abs(c.dist-adjusted)+(c.dispersion||20);
-return cs<ps?c:p;
+/* RINGS */
+rings.forEach(r=>map.removeLayer(r));
+labels.forEach(l=>map.removeLayer(l));
+rings=[]; labels=[];
+
+[50,100,150].forEach(r=>{
+rings.push(L.circle(holePos,{radius:r,color:'white',fill:false}).addTo(map));
+
+labels.push(L.marker([holePos[0],holePos[1]+(r/111320)],{
+icon:L.divIcon({className:'label',html:r+"m"})
+}).addTo(map));
 });
+
+/* LINE */
+if(guideLine) map.removeLayer(guideLine);
+guideLine=L.polyline([[lat,lng],holePos],{dashArray:'6,6'}).addTo(map);
+
+/* CLUB */
+let club="--";
+if(clubs.length){
+let best=clubs.reduce((p,c)=>Math.abs(c.dist-d)<Math.abs(p.dist-d)?c:p);
 club=best.name;
-}else club="Add clubs";
+}
+document.getElementById("club").innerText=club;
 
-document.getElementById("club").innerText = club;
-document.getElementById("distToPin").innerText = d + "m";
-
-let windAdj = d + 6;
-document.getElementById("wind").innerText = windAdj + "m";
-
-let aim = Math.random() > 0.5 ? "Left edge" : "Center";
-document.getElementById("aim").innerText = aim;
-
-let tip = d > 180 ? "Take more club" : d < 100 ? "Control swing" : "Smooth swing";
-document.getElementById("tip").innerText = tip;
+document.getElementById("wind").innerText=(d+6)+"m";
+document.getElementById("aim").innerText=Math.random()>0.5?"Left edge":"Center";
+document.getElementById("tip").innerText=d>180?"Take more club":"Smooth swing";
 }
 });
 
@@ -275,41 +273,16 @@ holeMarker=L.marker(holePos).addTo(map);
 }
 
 /* SHOTS */
-function addShot(){
-shots.push(1);
-document.getElementById("score").innerText=shots.length;
-}
-function removeShot(){
-shots.pop();
-document.getElementById("score").innerText=shots.length;
-}
-function clearShots(){
-shots=[];
-document.getElementById("score").innerText=0;
-}
+function addShot(){ shots.push(1); score.innerText=shots.length; }
+function removeShot(){ shots.pop(); score.innerText=shots.length; }
+function clearShots(){ shots=[]; score.innerText=0; }
 
-/* CLUBS */
-let clubs = JSON.parse(localStorage.getItem("clubs") || "[]");
-
-function getClubIcon(name){
-name=name.toLowerCase();
-if(name.includes("driver")) return "🏌️‍♂️";
-if(name.includes("wood")) return "🪵";
-if(name.includes("iron")) return "⛳";
-if(name.includes("wedge")) return "🔻";
-return "🏌️";
-}
-
-function updateClubDist(name,val){
-let club=clubs.find(c=>c.name===name);
-if(!club) return;
-club.dist=parseInt(val);
-localStorage.setItem("clubs",JSON.stringify(clubs));
-}
+/* PRACTICE */
+let clubs=JSON.parse(localStorage.getItem("clubs")||"[]");
 
 function removeClub(name){
-clubs = clubs.filter(c => c.name !== name);
-localStorage.setItem("clubs", JSON.stringify(clubs));
+clubs=clubs.filter(c=>c.name!==name);
+localStorage.setItem("clubs",JSON.stringify(clubs));
 renderClubs();
 }
 
@@ -321,114 +294,36 @@ renderClubs();
 }
 }
 
-/* OCR */
-async function handleImage(){
-let file=document.getElementById("imgUpload").files[0];
-if(!file) return alert("Upload image");
-
-const {data:{text}}=await Tesseract.recognize(file,'eng');
-document.getElementById("ocrOutput").innerText=text;
-
-let parsed=parseToptracer(text);
-previewImport(parsed);
-}
-
-function parseToptracer(text){
-let lines=text.split('\n');
-let res=[];
-lines.forEach(l=>{
-let m=l.match(/([A-Za-z0-9\s]+)\s+(\d{2,3})/);
-if(m){
-let name=m[1].trim();
-let dist=parseInt(m[2]);
-if(dist>50 && dist<350) res.push({name,dist});
-}
-});
-return res;
-}
-
-function previewImport(data){
-let html=`<div style="background:#1f3c2c;padding:10px;border-radius:10px;">✅ ${data.length} clubs detected</div>`;
-data.forEach((c,i)=>{
-html+=`<div><input value="${c.name}" id="n${i}"><input value="${c.dist}" id="d${i}"></div>`;
-});
-html+=`<button onclick="confirmImport(${data.length})">Save</button>`;
-document.getElementById("clubs").innerHTML=html;
-}
-
-function confirmImport(n){
-for(let i=0;i<n;i++){
-let name=document.getElementById("n"+i).value;
-let dist=parseInt(document.getElementById("d"+i).value);
-if(!clubs.find(c=>c.name===name)){
-clubs.push({name,dist,dispersion:20});
-}
-}
-localStorage.setItem("clubs",JSON.stringify(clubs));
-renderClubs();
-}
-
-/* RENDER */
 function renderClubs(){
-let groups={woods:[],irons:[],wedges:[]};
-
+let html="";
 clubs.forEach(c=>{
-let n=c.name.toLowerCase();
-if(n.includes("wood")||n.includes("driver")) groups.woods.push(c);
-else if(n.includes("iron")) groups.irons.push(c);
-else groups.wedges.push(c);
-});
-
-function g(title,list){
-if(!list.length) return "";
-let h=`<div class="group"><div class="groupTitle">${title} (${list.length})</div>`;
-list.forEach(c=>{
-h+=`<div class="clubRow">
-<div class="clubLeft">
-<div class="clubName">${getClubIcon(c.name)} ${c.name}</div>
-<div class="clubSub">Avg distance</div>
-</div>
+html+=`<div class="clubRow">
+<div class="clubName">${c.name}</div>
 <div class="clubRight">
-<div class="distBox">
-<input value="${c.dist}" onchange="updateClubDist('${c.name}',this.value)"> m
-</div>
+<input value="${c.dist}" onchange="updateClub('${c.name}',this.value)">
 <button class="removeBtn" onclick="removeClub('${c.name}')">✕</button>
 </div>
 </div>`;
 });
-return h+"</div>";
-}
-
-let html=
-g("WOODS",groups.woods)+
-g("IRONS",groups.irons)+
-g("WEDGES",groups.wedges);
-
-/* GAPPING */
-let sorted=[...clubs].sort((a,b)=>b.dist-a.dist);
-html+="<div style='margin-top:20px'><b>Gapping</b>";
-
-for(let i=0;i<sorted.length-1;i++){
-let gap=sorted[i].dist-sorted[i+1].dist;
-html+=`<div style="font-size:12px;opacity:0.7">
-${sorted[i].name} → ${sorted[i+1].name}: ${gap}m`;
-if(gap<5) html+=" ⚠️ overlap";
-if(gap>20) html+=" ⚠️ large gap";
-html+="</div>";
-}
-
-html+="</div>";
-
 document.getElementById("clubs").innerHTML=html;
 }
 
-function addClub(){
-let name=document.getElementById("clubName").value;
-let dist=parseInt(document.getElementById("clubDist").value);
-clubs.push({name,dist,dispersion:20});
+function updateClub(name,val){
+let c=clubs.find(x=>x.name===name);
+if(c){c.dist=parseInt(val);}
 localStorage.setItem("clubs",JSON.stringify(clubs));
-renderClubs();
 }
+
+async function handleImage(){
+let file=imgUpload.files[0];
+if(!file) return;
+
+const {data:{text}}=await Tesseract.recognize(file,'eng');
+ocrOutput.innerText=text;
+}
+
+function openPractice(){practiceScreen.style.display="block";}
+function closePractice(){practiceScreen.style.display="none";}
 
 renderClubs();
 </script>
