@@ -13,7 +13,7 @@
 <style>
 body { margin:0; font-family:-apple-system; background:black; color:white; }
 
-/* FIXED MAP */
+/* MAP FIX */
 #map {
   position:absolute;
   top:0;
@@ -21,6 +21,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   width:100%;
 }
 
+/* UI */
 .header {
   position:absolute; top:0; width:100%; text-align:center;
   padding:14px; background:rgba(0,0,0,0.6); z-index:1000;
@@ -59,17 +60,13 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   display:flex; z-index:1000;
 }
 
-.bottom button {
-  flex:1; padding:18px; border:none; font-weight:bold;
-}
+.bottom button { flex:1; padding:18px; border:none; font-weight:bold; }
 
 .green { background:#2ecc71; }
 .red { background:#e74c3c; }
 .center { background:black; color:white; }
 
-.label {
-  background:black; padding:3px 6px; border-radius:6px;
-}
+.label { background:black; padding:3px 6px; border-radius:6px; }
 
 /* PRACTICE UI */
 .group { margin-top:20px; }
@@ -115,6 +112,14 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   border-radius:10px;
   font-weight:bold;
 }
+
+.distBox input {
+  background:transparent;
+  border:none;
+  color:white;
+  width:50px;
+  text-align:right;
+}
 </style>
 </head>
 
@@ -144,15 +149,6 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 <button class="green" onclick="addShot()">+ Shot</button>
 <button class="center" id="score">0</button>
 <button class="red" onclick="removeShot()">-</button>
-</div>
-
-<!-- SCORECARD -->
-<div id="scorecardScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:black;z-index:2000;overflow:auto;padding:10px;">
-<h2>Scorecard</h2>
-<button onclick="closeScorecard()">⬅ Back</button>
-<table style="width:100%;">
-<tbody id="scoreRows"></tbody>
-</table>
 </div>
 
 <!-- PRACTICE -->
@@ -185,8 +181,6 @@ let userMarker, holeMarker, holePos=null;
 let shots=[],shotLines=[];
 
 /* NAV */
-function openScorecard(){ document.getElementById("scorecardScreen").style.display="block"; hideMain(); }
-function closeScorecard(){ document.getElementById("scorecardScreen").style.display="none"; showMain(); }
 function openPractice(){ document.getElementById("practiceScreen").style.display="block"; hideMain(); }
 function closePractice(){ document.getElementById("practiceScreen").style.display="none"; showMain(); }
 
@@ -237,8 +231,18 @@ holeMarker=L.marker(holePos).addTo(map);
 });
 }
 
-/* PRACTICE DATA */
+/* CLUB DATA */
 let clubs = JSON.parse(localStorage.getItem("clubs") || "[]");
+
+/* ICONS */
+function getClubIcon(name){
+name=name.toLowerCase();
+if(name.includes("driver")) return "🏌️‍♂️";
+if(name.includes("wood")) return "🪵";
+if(name.includes("iron")) return "⛳";
+if(name.includes("wedge")) return "🔻";
+return "🏌️";
+}
 
 /* OCR */
 async function handleImage(){
@@ -297,6 +301,15 @@ localStorage.setItem("clubs",JSON.stringify(clubs));
 renderClubs();
 }
 
+/* EDIT */
+function updateClubDist(name,val){
+let club=clubs.find(c=>c.name===name);
+if(!club) return;
+club.dist=parseInt(val);
+localStorage.setItem("clubs",JSON.stringify(clubs));
+}
+
+/* RENDER */
 function renderClubs(){
 let groups={woods:[],irons:[],wedges:[]};
 
@@ -313,19 +326,42 @@ let h=`<div class="group"><div class="groupTitle">${title} (${list.length})</div
 list.forEach(c=>{
 h+=`<div class="clubRow">
 <div class="clubLeft">
-<div class="clubName">${c.name}</div>
+<div class="clubName">${getClubIcon(c.name)} ${c.name}</div>
 <div class="clubSub">Avg distance</div>
 </div>
 <div class="clubRight">
-<div class="distBox">${c.dist} m</div>
+<div class="distBox">
+<input value="${c.dist}" onchange="updateClubDist('${c.name}',this.value)"> m
+</div>
 </div>
 </div>`;
 });
 return h+"</div>";
 }
 
-document.getElementById("clubs").innerHTML=
-g("WOODS",groups.woods)+g("IRONS",groups.irons)+g("WEDGES",groups.wedges);
+let html=
+g("WOODS",groups.woods)+
+g("IRONS",groups.irons)+
+g("WEDGES",groups.wedges);
+
+/* GAPPING */
+let sorted=[...clubs].sort((a,b)=>b.dist-a.dist);
+html+="<div style='margin-top:20px'><b>Gapping</b>";
+
+for(let i=0;i<sorted.length-1;i++){
+let gap=sorted[i].dist-sorted[i+1].dist;
+html+=`<div style="font-size:12px;opacity:0.7">
+${sorted[i].name} → ${sorted[i+1].name}: ${gap}m`;
+
+if(gap<5) html+=" ⚠️ overlap";
+if(gap>20) html+=" ⚠️ large gap";
+
+html+="</div>";
+}
+
+html+="</div>";
+
+document.getElementById("clubs").innerHTML=html;
 }
 
 function addClub(){
