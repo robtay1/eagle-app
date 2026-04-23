@@ -65,6 +65,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 }
 
 .clubMain { font-size:26px; font-weight:bold; margin:8px 0; }
+.caddieList div { font-size:13px; margin:4px 0; }
 
 /* BOTTOM */
 .bottom {
@@ -90,33 +91,56 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   border-radius:6px;
 }
 
-/* SCORECARD */
-.scoreWrap {
-  margin-top:20px;
+/* PRACTICE */
+.clubRow {
+  display:flex;
+  justify-content:space-between;
+  padding:12px 0;
+  border-bottom:1px solid rgba(255,255,255,0.1);
 }
-
-.scoreTable {
-  width:100%;
-  border-collapse:collapse;
+.clubRight {
+  display:flex;
+  gap:10px;
+  align-items:center;
 }
-
-.scoreTable td {
-  border:1px solid #444;
-  padding:8px;
-  text-align:center;
-}
-
-.scoreTable input {
-  width:35px;
-  background:black;
+.clubRight input {
+  width:60px;
+  background:transparent;
   border:none;
   color:white;
-  text-align:center;
+  text-align:right;
+}
+.removeBtn {
+  background:none;
+  border:none;
+  color:#ff6b6b;
+  font-size:18px;
 }
 
-.sectionTitle {
-  margin-top:20px;
-  font-weight:bold;
+/* SCORECARD (NEW STYLE) */
+.scoreList { margin-top:20px; }
+.scoreRow {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:10px 0;
+}
+.holeNum { width:30px; font-size:18px; }
+.parInput {
+  flex:1;
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  background:#bbb;
+  color:black;
+}
+.scoreInput {
+  flex:1;
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  background:#ddd;
+  color:black;
 }
 </style>
 </head>
@@ -139,10 +163,12 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 
 <div class="card">
 <div class="clubMain" id="club">--</div>
+<div class="caddieList">
 <div>⛳ <span id="distToPin">--</span></div>
 <div>🌬 Wind: <span id="wind">--</span></div>
 <div>🎯 Aim: <span id="aim">Center</span></div>
 <div>⚙️ Tip: <span id="tip">--</span></div>
+</div>
 </div>
 
 <div class="bottom">
@@ -151,18 +177,28 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 <button class="red" onclick="removeShot()">-</button>
 </div>
 
+<!-- PRACTICE -->
+<div id="practiceScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:black;z-index:2000;padding:20px;overflow:auto;">
+<h2>Practice</h2>
+<button onclick="closePractice()">⬅ Back</button>
+<input type="file" id="imgUpload">
+<button onclick="handleImage()">Import</button>
+<button onclick="resetClubs()">Reset</button>
+<pre id="ocrOutput"></pre>
+<div id="clubs"></div>
+</div>
+
 <!-- SCORECARD -->
-<div id="scorecardScreen" style="display:none;position:absolute;top:0;width:100%;height:100%;background:black;z-index:3000;padding:15px;overflow:auto;">
+<div id="scorecardScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:black;z-index:3000;padding:20px;overflow:auto;">
 <h2>Scorecard</h2>
 <button onclick="closeScorecard()">⬅ Back</button>
 
-<h3>Scan Scorecard</h3>
 <input type="file" id="scoreImg">
 <button onclick="scanScorecard()">Scan</button>
 
 <pre id="scoreOCR"></pre>
 
-<div class="scoreWrap" id="scoreWrap"></div>
+<div class="scoreList" id="scoreList"></div>
 </div>
 
 <script>
@@ -179,8 +215,8 @@ let rings=[],labels=[];
 let currentTarget=null;
 let mode="pin";
 
+let clubs=JSON.parse(localStorage.getItem("clubs")||"[]");
 let scores=JSON.parse(localStorage.getItem("scores")||JSON.stringify(Array(18).fill(0)));
-let pars=Array(18).fill(4);
 
 /* GPS */
 navigator.geolocation.watchPosition(pos=>{
@@ -203,7 +239,7 @@ let d=Math.round(map.distance([lat,lng],holePos));
 strip.innerText="Distance: "+d+"m";
 distToPin.innerText=d+"m";
 
-/* RINGS (RESTORED) */
+/* RINGS RESTORED */
 rings.forEach(r=>map.removeLayer(r));
 labels.forEach(l=>map.removeLayer(l));
 rings=[];labels=[];
@@ -234,18 +270,15 @@ function closeScorecard(){
 scorecardScreen.style.display="none";
 }
 
-/* OCR FIX */
+/* OCR */
 async function scanScorecard(){
 let file = scoreImg.files[0];
 if(!file) return;
-
-scoreOCR.innerText="Scanning...";
 
 const {data:{text}}=await Tesseract.recognize(file,'eng');
 scoreOCR.innerText=text;
 
 let nums = text.match(/\d+/g)||[];
-
 let filtered = nums.map(n=>parseInt(n)).filter(n=>n>0 && n<=12);
 
 for(let i=0;i<18;i++){
@@ -258,65 +291,27 @@ renderScorecard();
 
 /* RENDER */
 function renderScorecard(){
-
 let html="";
-
-/* FRONT 9 */
-html+="<div class='sectionTitle'>Front 9</div>";
-html+="<table class='scoreTable'><tr><td>Hole</td>";
-
-for(let i=1;i<=9;i++) html+="<td>"+i+"</td>";
-html+="<td>OUT</td></tr>";
-
-html+="<tr><td>Par</td>";
-for(let i=0;i<9;i++){
-html+=`<td><input value="${pars[i]}" onchange="pars[${i}]=parseInt(this.value)||4"></td>`;
+for(let i=0;i<18;i++){
+html+=`
+<div class="scoreRow">
+  <div class="holeNum">${i+1}</div>
+  <input class="parInput" value="4">
+  <input class="scoreInput" value="${scores[i]}" onchange="updateScore(${i},this.value)">
+</div>`;
 }
-html+=`<td>${pars.slice(0,9).reduce((a,b)=>a+b,0)}</td></tr>`;
-
-html+="<tr><td>Score</td>";
-for(let i=0;i<9;i++){
-html+=`<td><input value="${scores[i]}" onchange="updateScore(${i},this.value)"></td>`;
-}
-html+=`<td>${scores.slice(0,9).reduce((a,b)=>a+b,0)}</td></tr>`;
-html+="</table>";
-
-/* BACK 9 */
-html+="<div class='sectionTitle'>Back 9</div>";
-html+="<table class='scoreTable'><tr><td>Hole</td>";
-
-for(let i=10;i<=18;i++) html+="<td>"+i+"</td>";
-html+="<td>IN</td></tr>";
-
-html+="<tr><td>Par</td>";
-for(let i=9;i<18;i++){
-html+=`<td><input value="${pars[i]}" onchange="pars[${i}]=parseInt(this.value)||4"></td>`;
-}
-html+=`<td>${pars.slice(9).reduce((a,b)=>a+b,0)}</td></tr>`;
-
-html+="<tr><td>Score</td>";
-for(let i=9;i<18;i++){
-html+=`<td><input value="${scores[i]}" onchange="updateScore(${i},this.value)"></td>`;
-}
-html+=`<td>${scores.slice(9).reduce((a,b)=>a+b,0)}</td></tr>`;
-html+="</table>";
-
-/* TOTAL */
-let total = scores.reduce((a,b)=>a+b,0);
-html+=`<h3>Total: ${total}</h3>`;
-
-scoreWrap.innerHTML=html;
+scoreList.innerHTML=html;
 }
 
 function updateScore(i,val){
 scores[i]=parseInt(val)||0;
 localStorage.setItem("scores",JSON.stringify(scores));
-renderScorecard();
 }
 
-/* BASIC */
+/* STUBS (unchanged) */
 function toggleMode(){}
 function openPractice(){}
+function closePractice(){practiceScreen.style.display="none";}
 function addShot(){score.innerText=parseInt(score.innerText)+1;}
 function removeShot(){score.innerText=Math.max(0,score.innerText-1);}
 </script>
