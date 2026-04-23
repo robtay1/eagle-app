@@ -126,6 +126,13 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 <div id="scorecardScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:black;z-index:3000;padding:15px;overflow:auto;">
 <h2>Scorecard</h2>
 <button onclick="closeScorecard()">⬅ Back</button>
+
+<h3>Scan Scorecard</h3>
+<input type="file" id="scoreImg">
+<button onclick="scanScorecard()">Scan</button>
+
+<pre id="scoreOCR"></pre>
+
 <table style="width:100%;margin-top:10px;">
 <tbody id="scoreRows"></tbody>
 </table>
@@ -180,7 +187,7 @@ targetMarker=L.marker(currentTarget,{opacity:0.7}).addTo(map);
 }
 });
 
-/* CADDIE LOGIC */
+/* CADDIE */
 function getAdvice(d){
 if(d>180) return {aim:"Center", tip:"Full swing"};
 if(d>120) return {aim:"Slight right", tip:"Controlled swing"};
@@ -189,7 +196,6 @@ return {aim:"Pin", tip:"Smooth swing"};
 
 /* UPDATE */
 function update(lat,lng){
-
 let target = mode==="target" && currentTarget ? currentTarget : holePos;
 if(!target) return;
 
@@ -295,25 +301,12 @@ function resetClubs(){
 clubs=[]; localStorage.removeItem("clubs"); renderClubs();
 }
 
-/* OCR */
+/* OCR CLUBS */
 async function handleImage(){
 let file=imgUpload.files[0];
 if(!file) return;
 const {data:{text}}=await Tesseract.recognize(file,'eng');
 ocrOutput.innerText=text;
-parseClubs(text);
-}
-
-function parseClubs(text){
-let lines=text.split("\\n");
-lines.forEach(line=>{
-let m=line.match(/(\\w+)\\s+(\\d+)/);
-if(m){
-clubs.push({name:m[1],dist:parseInt(m[2])});
-}
-});
-localStorage.setItem("clubs",JSON.stringify(clubs));
-renderClubs();
 }
 
 /* SCORECARD */
@@ -328,6 +321,30 @@ scorecardScreen.style.display="none";
 showMain();
 }
 
+/* SCAN SCORECARD */
+async function scanScorecard(){
+let file = scoreImg.files[0];
+if(!file) return;
+
+scoreOCR.innerText="Scanning...";
+
+const {data:{text}}=await Tesseract.recognize(file,'eng');
+
+scoreOCR.innerText=text;
+
+let nums = text.match(/\d+/g);
+
+if(!nums) return;
+
+for(let i=0;i<18;i++){
+scores[i] = nums[i] ? parseInt(nums[i]) : 0;
+}
+
+localStorage.setItem("scores", JSON.stringify(scores));
+renderScorecard();
+}
+
+/* RENDER */
 function renderScorecard(){
 let html="";
 for(let i=0;i<18;i++){
@@ -340,8 +357,9 @@ html+=`<tr>
 scoreRows.innerHTML=html;
 }
 
+/* SAVE */
 function updateScore(i,val){
-scores[i]=parseInt(val);
+scores[i]=parseInt(val)||0;
 localStorage.setItem("scores",JSON.stringify(scores));
 }
 
