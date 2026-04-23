@@ -12,116 +12,61 @@
 body { margin:0; font-family:-apple-system; background:black; color:white; }
 #map { position:absolute; top:0; bottom:0; width:100%; }
 
-/* HEADER */
-.header {
-  position:absolute; top:0; width:100%; text-align:center;
-  padding:14px; background:rgba(0,0,0,0.6); z-index:1000;
-}
+.header { position:absolute; top:0; width:100%; text-align:center; padding:14px; background:rgba(0,0,0,0.6); z-index:1000; }
+.holebar { position:absolute; top:50px; width:100%; text-align:center; padding:6px; background:rgba(0,0,0,0.5); z-index:1000; }
 
-.holebar {
-  position:absolute; top:50px; width:100%; text-align:center;
-  padding:6px; background:rgba(0,0,0,0.5); z-index:1000;
-}
-
-/* BUTTONS */
 .mapBtns {
-  position:absolute;
-  bottom:290px;
-  width:100%;
-  display:flex;
-  justify-content:center;
-  gap:10px;
-  z-index:1200;
+  position:absolute; bottom:290px; width:100%;
+  display:flex; justify-content:center; gap:10px; z-index:1200;
 }
 
 .mapBtns button {
   background:rgba(30,30,30,0.9);
-  color:white;
-  border:none;
-  padding:10px 14px;
-  border-radius:12px;
-  font-weight:bold;
+  color:white; border:none; padding:10px 14px;
+  border-radius:12px; font-weight:bold;
 }
 
-/* STRIP */
 .strip {
-  position:absolute;
-  bottom:250px;
-  width:100%;
-  text-align:center;
-  background:rgba(0,0,0,0.6);
-  padding:6px;
-  z-index:1100;
+  position:absolute; bottom:250px; width:100%;
+  text-align:center; background:rgba(0,0,0,0.6);
+  padding:6px; z-index:1100;
 }
 
-/* CARD */
 .card {
-  position:absolute;
-  bottom:110px;
-  left:10px;
-  right:10px;
-  background:#1c1c1c;
-  border-radius:20px;
-  padding:14px;
-  z-index:900;
+  position:absolute; bottom:110px; left:10px; right:10px;
+  background:#1c1c1c; border-radius:20px; padding:14px; z-index:900;
 }
 
 .clubMain { font-size:26px; font-weight:bold; margin:8px 0; }
 .caddieList div { font-size:13px; margin:4px 0; }
 
-/* BOTTOM */
 .bottom {
-  position:absolute;
-  bottom:0;
-  width:100%;
-  display:flex;
-  z-index:1200;
+  position:absolute; bottom:0; width:100%;
+  display:flex; z-index:1200;
 }
 
-.bottom button {
-  flex:1;
-  padding:18px;
-  border:none;
-  font-weight:bold;
-}
-
+.bottom button { flex:1; padding:18px; border:none; font-weight:bold; }
 .green { background:#2ecc71; }
 .red { background:#e74c3c; }
 .center { background:black; color:white; }
 
-.label {
-  background:black;
-  padding:3px 6px;
-  border-radius:6px;
-}
+.label { background:black; padding:3px 6px; border-radius:6px; }
 
-/* PRACTICE */
 .clubRow {
-  display:flex;
-  justify-content:space-between;
-  padding:12px 0;
-  border-bottom:1px solid rgba(255,255,255,0.1);
+  display:flex; justify-content:space-between;
+  padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.1);
 }
 
-.clubRight {
-  display:flex;
-  gap:10px;
-  align-items:center;
-}
+.clubRight { display:flex; gap:10px; align-items:center; }
 
 .clubRight input {
-  width:60px;
-  background:transparent;
-  border:none;
-  color:white;
-  text-align:right;
+  width:60px; background:transparent;
+  border:none; color:white; text-align:right;
 }
 
 .removeBtn {
-  background:none;
-  border:none;
-  color:#ff6b6b;
-  font-size:18px;
+  background:none; border:none;
+  color:#ff6b6b; font-size:18px;
 }
 </style>
 </head>
@@ -162,9 +107,17 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 <div id="practiceScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:black;z-index:2000;padding:20px;overflow:auto;">
 <h2>Practice</h2>
 <button onclick="closePractice()">⬅ Back</button>
+
 <input type="file" id="imgUpload">
 <button onclick="handleImage()">Import</button>
+
+<h3>Add Club</h3>
+<input id="clubName" placeholder="Club name">
+<input id="clubDist" placeholder="Distance">
+<button onclick="addClub()">Add</button>
+
 <button onclick="resetClubs()">Reset</button>
+
 <pre id="ocrOutput"></pre>
 <div id="clubs"></div>
 </div>
@@ -194,7 +147,9 @@ let currentTarget=null;
 let mode="pin";
 
 let clubs=JSON.parse(localStorage.getItem("clubs")||"[]");
-let scores=Array(18).fill(0);
+let scores=JSON.parse(localStorage.getItem("scores")||JSON.stringify(Array(18).fill(0)));
+
+let shots=[];
 
 /* GPS */
 navigator.geolocation.watchPosition(pos=>{
@@ -208,7 +163,7 @@ map.setView([lat,lng],18);
 update(lat,lng);
 });
 
-/* MODE TOGGLE */
+/* MODE */
 function toggleMode(){
 mode = mode==="pin"?"target":"pin";
 currentTarget=null;
@@ -224,6 +179,13 @@ if(targetMarker) map.removeLayer(targetMarker);
 targetMarker=L.marker(currentTarget,{opacity:0.7}).addTo(map);
 }
 });
+
+/* CADDIE LOGIC */
+function getAdvice(d){
+if(d>180) return {aim:"Center", tip:"Full swing"};
+if(d>120) return {aim:"Slight right", tip:"Controlled swing"};
+return {aim:"Pin", tip:"Smooth swing"};
+}
 
 /* UPDATE */
 function update(lat,lng){
@@ -264,26 +226,45 @@ else if(Math.abs(c.dist-d)<Math.abs(best.dist-d)) best=c;
 club.innerText=best?best.name:(d>200?"Driver":"Add clubs");
 
 /* AI */
-wind.innerText=(d+6)+"m";
-aim.innerText=Math.random()>0.5?"Left edge":"Center";
-tip.innerText=d>180?"Take more club":"Smooth swing";
+let advice=getAdvice(d);
+aim.innerText=advice.aim;
+tip.innerText=advice.tip;
+wind.innerText=d+"m";
 }
 
 /* PIN */
 function setPin(){
 map.once('click',e=>{
 holePos=[e.latlng.lat,e.latlng.lng];
-currentTarget=null;
 if(holeMarker) map.removeLayer(holeMarker);
 holeMarker=L.marker(holePos).addTo(map);
 });
 }
 
 /* SHOTS */
-function addShot(){score.innerText=parseInt(score.innerText)+1;}
-function removeShot(){score.innerText=Math.max(0,score.innerText-1);}
+function addShot(){
+if(userMarker){
+shots.push(userMarker.getLatLng());
+L.polyline(shots).addTo(map);
+}
+score.innerText=parseInt(score.innerText)+1;
+}
 
-/* PRACTICE */
+function removeShot(){
+score.innerText=Math.max(0,score.innerText-1);
+}
+
+/* CLUBS */
+function addClub(){
+let name=clubName.value;
+let dist=parseInt(clubDist.value);
+if(!name||!dist) return;
+
+clubs.push({name,dist});
+localStorage.setItem("clubs",JSON.stringify(clubs));
+renderClubs();
+}
+
 function renderClubs(){
 let html="";
 clubs.forEach(c=>{
@@ -314,11 +295,25 @@ function resetClubs(){
 clubs=[]; localStorage.removeItem("clubs"); renderClubs();
 }
 
+/* OCR */
 async function handleImage(){
 let file=imgUpload.files[0];
 if(!file) return;
 const {data:{text}}=await Tesseract.recognize(file,'eng');
 ocrOutput.innerText=text;
+parseClubs(text);
+}
+
+function parseClubs(text){
+let lines=text.split("\\n");
+lines.forEach(line=>{
+let m=line.match(/(\\w+)\\s+(\\d+)/);
+if(m){
+clubs.push({name:m[1],dist:parseInt(m[2])});
+}
+});
+localStorage.setItem("clubs",JSON.stringify(clubs));
+renderClubs();
 }
 
 /* SCORECARD */
@@ -339,10 +334,15 @@ for(let i=0;i<18;i++){
 html+=`<tr>
 <td>${i+1}</td>
 <td><input value="4"></td>
-<td><input value="${scores[i]}" onchange="scores[${i}]=this.value"></td>
+<td><input value="${scores[i]}" onchange="updateScore(${i},this.value)"></td>
 </tr>`;
 }
 scoreRows.innerHTML=html;
+}
+
+function updateScore(i,val){
+scores[i]=parseInt(val);
+localStorage.setItem("scores",JSON.stringify(scores));
 }
 
 /* NAV */
@@ -362,6 +362,5 @@ setTimeout(()=>map.invalidateSize(),300);
 
 renderClubs();
 </script>
-
 </body>
 </html>
