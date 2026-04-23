@@ -12,61 +12,111 @@
 body { margin:0; font-family:-apple-system; background:black; color:white; }
 #map { position:absolute; top:0; bottom:0; width:100%; }
 
-.header { position:absolute; top:0; width:100%; text-align:center; padding:14px; background:rgba(0,0,0,0.6); z-index:1000; }
-.holebar { position:absolute; top:50px; width:100%; text-align:center; padding:6px; background:rgba(0,0,0,0.5); z-index:1000; }
+.header {
+  position:absolute; top:0; width:100%; text-align:center;
+  padding:14px; background:rgba(0,0,0,0.6); z-index:1000;
+}
+
+.holebar {
+  position:absolute; top:50px; width:100%; text-align:center;
+  padding:6px; background:rgba(0,0,0,0.5); z-index:1000;
+}
 
 .mapBtns {
-  position:absolute; bottom:290px; width:100%;
-  display:flex; justify-content:center; gap:10px; z-index:1200;
+  position:absolute;
+  bottom:290px;
+  width:100%;
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  z-index:1200;
 }
 
 .mapBtns button {
   background:rgba(30,30,30,0.9);
-  color:white; border:none; padding:10px 14px;
-  border-radius:12px; font-weight:bold;
+  color:white;
+  border:none;
+  padding:10px 14px;
+  border-radius:12px;
+  font-weight:bold;
 }
 
 .strip {
-  position:absolute; bottom:250px; width:100%;
-  text-align:center; background:rgba(0,0,0,0.6);
-  padding:6px; z-index:1100;
+  position:absolute;
+  bottom:250px;
+  width:100%;
+  text-align:center;
+  background:rgba(0,0,0,0.6);
+  padding:6px;
+  z-index:1100;
 }
 
 .card {
-  position:absolute; bottom:110px; left:10px; right:10px;
-  background:#1c1c1c; border-radius:20px; padding:14px; z-index:900;
+  position:absolute;
+  bottom:110px;
+  left:10px;
+  right:10px;
+  background:#1c1c1c;
+  border-radius:20px;
+  padding:14px;
+  z-index:900;
 }
 
 .clubMain { font-size:26px; font-weight:bold; margin:8px 0; }
-.caddieList div { font-size:13px; margin:4px 0; }
 
 .bottom {
-  position:absolute; bottom:0; width:100%;
-  display:flex; z-index:1200;
+  position:absolute;
+  bottom:0;
+  width:100%;
+  display:flex;
+  z-index:1200;
 }
 
-.bottom button { flex:1; padding:18px; border:none; font-weight:bold; }
+.bottom button {
+  flex:1;
+  padding:18px;
+  border:none;
+  font-weight:bold;
+}
+
 .green { background:#2ecc71; }
 .red { background:#e74c3c; }
 .center { background:black; color:white; }
 
-.label { background:black; padding:3px 6px; border-radius:6px; }
-
-.clubRow {
-  display:flex; justify-content:space-between;
-  padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.1);
+.label {
+  background:black;
+  padding:3px 6px;
+  border-radius:6px;
 }
 
-.clubRight { display:flex; gap:10px; align-items:center; }
-
-.clubRight input {
-  width:60px; background:transparent;
-  border:none; color:white; text-align:right;
+/* SCORECARD GRID */
+.scoreGrid {
+  overflow-x:auto;
+  margin-top:15px;
 }
 
-.removeBtn {
-  background:none; border:none;
-  color:#ff6b6b; font-size:18px;
+.scoreGrid table {
+  border-collapse:collapse;
+  min-width:900px;
+}
+
+.scoreGrid td {
+  border:1px solid #444;
+  padding:6px;
+  text-align:center;
+}
+
+.scoreGrid input {
+  width:40px;
+  background:black;
+  border:none;
+  color:white;
+  text-align:center;
+}
+
+.totalCell {
+  font-weight:bold;
+  background:#111;
 }
 </style>
 </head>
@@ -89,37 +139,16 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 
 <div class="card">
 <div class="clubMain" id="club">--</div>
-<div class="caddieList">
 <div>⛳ <span id="distToPin">--</span></div>
 <div>🌬 Wind: <span id="wind">--</span></div>
 <div>🎯 Aim: <span id="aim">Center</span></div>
 <div>⚙️ Tip: <span id="tip">--</span></div>
-</div>
 </div>
 
 <div class="bottom">
 <button class="green" onclick="addShot()">+ Shot</button>
 <button class="center" id="score">0</button>
 <button class="red" onclick="removeShot()">-</button>
-</div>
-
-<!-- PRACTICE -->
-<div id="practiceScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:black;z-index:2000;padding:20px;overflow:auto;">
-<h2>Practice</h2>
-<button onclick="closePractice()">⬅ Back</button>
-
-<input type="file" id="imgUpload">
-<button onclick="handleImage()">Import</button>
-
-<h3>Add Club</h3>
-<input id="clubName" placeholder="Club name">
-<input id="clubDist" placeholder="Distance">
-<button onclick="addClub()">Add</button>
-
-<button onclick="resetClubs()">Reset</button>
-
-<pre id="ocrOutput"></pre>
-<div id="clubs"></div>
 </div>
 
 <!-- SCORECARD -->
@@ -133,9 +162,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 
 <pre id="scoreOCR"></pre>
 
-<table style="width:100%;margin-top:10px;">
-<tbody id="scoreRows"></tbody>
-</table>
+<div class="scoreGrid" id="scoreGrid"></div>
 </div>
 
 <script>
@@ -155,7 +182,7 @@ let mode="pin";
 
 let clubs=JSON.parse(localStorage.getItem("clubs")||"[]");
 let scores=JSON.parse(localStorage.getItem("scores")||JSON.stringify(Array(18).fill(0)));
-
+let pars=Array(18).fill(4);
 let shots=[];
 
 /* GPS */
@@ -170,84 +197,99 @@ map.setView([lat,lng],18);
 update(lat,lng);
 });
 
-/* MODE */
-function toggleMode(){
-mode = mode==="pin"?"target":"pin";
-currentTarget=null;
-if(targetMarker) map.removeLayer(targetMarker);
-}
-
-/* TAP */
-map.on('click',e=>{
-if(mode==="target"){
-currentTarget=[e.latlng.lat,e.latlng.lng];
-
-if(targetMarker) map.removeLayer(targetMarker);
-targetMarker=L.marker(currentTarget,{opacity:0.7}).addTo(map);
-}
-});
-
-/* CADDIE */
-function getAdvice(d){
-if(d>180) return {aim:"Center", tip:"Full swing"};
-if(d>120) return {aim:"Slight right", tip:"Controlled swing"};
-return {aim:"Pin", tip:"Smooth swing"};
-}
-
 /* UPDATE */
 function update(lat,lng){
-let target = mode==="target" && currentTarget ? currentTarget : holePos;
+let target = holePos;
 if(!target) return;
 
 let d=Math.round(map.distance([lat,lng],target));
 
 strip.innerText="Distance: "+d+"m";
 distToPin.innerText=d+"m";
-
-/* LINE */
-if(guideLine) map.removeLayer(guideLine);
-guideLine=L.polyline([[lat,lng],target],{dashArray:'6,6'}).addTo(map);
-
-/* RINGS */
-if(holePos){
-rings.forEach(r=>map.removeLayer(r));
-labels.forEach(l=>map.removeLayer(l));
-rings=[];labels=[];
-
-[50,100,150].forEach(r=>{
-rings.push(L.circle(holePos,{radius:r,color:'white',fill:false}).addTo(map));
-labels.push(L.marker([holePos[0],holePos[1]+(r/111320)],{
-icon:L.divIcon({className:'label',html:r+"m"})
-}).addTo(map));
-});
 }
 
-/* CLUB */
-let best=null;
-clubs.forEach(c=>{
-if(!best) best=c;
-else if(Math.abs(c.dist-d)<Math.abs(best.dist-d)) best=c;
-});
-
-club.innerText=best?best.name:(d>200?"Driver":"Add clubs");
-
-/* AI */
-let advice=getAdvice(d);
-aim.innerText=advice.aim;
-tip.innerText=advice.tip;
-wind.innerText=d+"m";
+/* SCORECARD */
+function openScorecard(){
+scorecardScreen.style.display="block";
+renderScorecard();
 }
 
-/* PIN */
-function setPin(){
-map.once('click',e=>{
+function closeScorecard(){
+scorecardScreen.style.display="none";
+}
+
+/* OCR */
+async function scanScorecard(){
+let file = scoreImg.files[0];
+if(!file) return;
+
+scoreOCR.innerText="Scanning...";
+
+const {data:{text}}=await Tesseract.recognize(file,'eng');
+scoreOCR.innerText=text;
+
+let rawNums = text.match(/\d+/g)||[];
+
+let filtered = rawNums.map(n=>parseInt(n)).filter(n=>n>0 && n<=12);
+
+for(let i=0;i<18;i++){
+scores[i]=filtered[i]||0;
+}
+
+localStorage.setItem("scores",JSON.stringify(scores));
+renderScorecard();
+}
+
+/* GRID */
+function renderScorecard(){
+
+let front = scores.slice(0,9).reduce((a,b)=>a+b,0);
+let back = scores.slice(9).reduce((a,b)=>a+b,0);
+let total = front + back;
+
+let html="<table><tr><td>Hole</td>";
+
+for(let i=1;i<=18;i++) html+="<td>"+i+"</td>";
+
+html+="<td class='totalCell'>OUT</td><td class='totalCell'>IN</td><td class='totalCell'>TOT</td></tr>";
+
+html+="<tr><td>Par</td>";
+pars.forEach((p,i)=>{
+html+=`<td><input value="${p}" onchange="pars[${i}]=parseInt(this.value)||4"></td>`;
+});
+html+=`<td class='totalCell'>${pars.slice(0,9).reduce((a,b)=>a+b,0)}</td>`;
+html+=`<td class='totalCell'>${pars.slice(9).reduce((a,b)=>a+b,0)}</td>`;
+html+=`<td class='totalCell'>${pars.reduce((a,b)=>a+b,0)}</td></tr>`;
+
+html+="<tr><td>Score</td>";
+scores.forEach((s,i)=>{
+html+=`<td><input value="${s}" onchange="updateScore(${i},this.value)"></td>`;
+});
+html+=`<td class='totalCell'>${front}</td>`;
+html+=`<td class='totalCell'>${back}</td>`;
+html+=`<td class='totalCell'>${total}</td></tr>`;
+
+html+="</table>";
+
+scoreGrid.innerHTML=html;
+}
+
+function updateScore(i,val){
+scores[i]=parseInt(val)||0;
+localStorage.setItem("scores",JSON.stringify(scores));
+renderScorecard();
+}
+
+/* BASIC APP FUNCTIONS */
+function setPin(){map.once('click',e=>{
 holePos=[e.latlng.lat,e.latlng.lng];
 if(holeMarker) map.removeLayer(holeMarker);
 holeMarker=L.marker(holePos).addTo(map);
-});
-}
+});}
 
-/* SHOTS */
+function toggleMode(){}
+function openPractice(){}
+
 function addShot(){
 if(userMarker){
 shots.push(userMarker.getLatLng());
@@ -259,126 +301,7 @@ score.innerText=parseInt(score.innerText)+1;
 function removeShot(){
 score.innerText=Math.max(0,score.innerText-1);
 }
-
-/* CLUBS */
-function addClub(){
-let name=clubName.value;
-let dist=parseInt(clubDist.value);
-if(!name||!dist) return;
-
-clubs.push({name,dist});
-localStorage.setItem("clubs",JSON.stringify(clubs));
-renderClubs();
-}
-
-function renderClubs(){
-let html="";
-clubs.forEach(c=>{
-html+=`<div class="clubRow">
-<div>${c.name}</div>
-<div class="clubRight">
-<input value="${c.dist}" onchange="updateClub('${c.name}',this.value)">
-<button class="removeBtn" onclick="removeClub('${c.name}')">✕</button>
-</div>
-</div>`;
-});
-clubsDiv.innerHTML=html;
-}
-
-function updateClub(name,val){
-let c=clubs.find(x=>x.name===name);
-if(c)c.dist=parseInt(val);
-localStorage.setItem("clubs",JSON.stringify(clubs));
-}
-
-function removeClub(name){
-clubs=clubs.filter(c=>c.name!==name);
-localStorage.setItem("clubs",JSON.stringify(clubs));
-renderClubs();
-}
-
-function resetClubs(){
-clubs=[]; localStorage.removeItem("clubs"); renderClubs();
-}
-
-/* OCR CLUBS */
-async function handleImage(){
-let file=imgUpload.files[0];
-if(!file) return;
-const {data:{text}}=await Tesseract.recognize(file,'eng');
-ocrOutput.innerText=text;
-}
-
-/* SCORECARD */
-function openScorecard(){
-scorecardScreen.style.display="block";
-hideMain();
-renderScorecard();
-}
-
-function closeScorecard(){
-scorecardScreen.style.display="none";
-showMain();
-}
-
-/* SCAN SCORECARD */
-async function scanScorecard(){
-let file = scoreImg.files[0];
-if(!file) return;
-
-scoreOCR.innerText="Scanning...";
-
-const {data:{text}}=await Tesseract.recognize(file,'eng');
-
-scoreOCR.innerText=text;
-
-let nums = text.match(/\d+/g);
-
-if(!nums) return;
-
-for(let i=0;i<18;i++){
-scores[i] = nums[i] ? parseInt(nums[i]) : 0;
-}
-
-localStorage.setItem("scores", JSON.stringify(scores));
-renderScorecard();
-}
-
-/* RENDER */
-function renderScorecard(){
-let html="";
-for(let i=0;i<18;i++){
-html+=`<tr>
-<td>${i+1}</td>
-<td><input value="4"></td>
-<td><input value="${scores[i]}" onchange="updateScore(${i},this.value)"></td>
-</tr>`;
-}
-scoreRows.innerHTML=html;
-}
-
-/* SAVE */
-function updateScore(i,val){
-scores[i]=parseInt(val)||0;
-localStorage.setItem("scores",JSON.stringify(scores));
-}
-
-/* NAV */
-function openPractice(){practiceScreen.style.display="block"; hideMain();}
-function closePractice(){practiceScreen.style.display="none"; showMain();}
-
-function hideMain(){
-document.querySelectorAll("#map,.header,.holebar,.mapBtns,.strip,.card,.bottom")
-.forEach(el=>el.style.display="none");
-}
-
-function showMain(){
-document.querySelectorAll("#map,.header,.holebar,.mapBtns,.strip,.card,.bottom")
-.forEach(el=>el.style.display="block");
-setTimeout(()=>map.invalidateSize(),300);
-}
-
-renderClubs();
 </script>
+
 </body>
 </html>
