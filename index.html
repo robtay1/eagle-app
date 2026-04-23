@@ -12,16 +12,17 @@
 body { margin:0; font-family:-apple-system; background:black; color:white; }
 #map { position:absolute; top:0; bottom:0; width:100%; }
 
+/* HEADER */
 .header {
   position:absolute; top:0; width:100%; text-align:center;
   padding:14px; background:rgba(0,0,0,0.6); z-index:1000;
 }
-
 .holebar {
   position:absolute; top:50px; width:100%; text-align:center;
   padding:6px; background:rgba(0,0,0,0.5); z-index:1000;
 }
 
+/* BUTTONS */
 .mapBtns {
   position:absolute;
   bottom:290px;
@@ -31,7 +32,6 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   gap:10px;
   z-index:1200;
 }
-
 .mapBtns button {
   background:rgba(30,30,30,0.9);
   color:white;
@@ -41,6 +41,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   font-weight:bold;
 }
 
+/* STRIP */
 .strip {
   position:absolute;
   bottom:250px;
@@ -51,6 +52,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   z-index:1100;
 }
 
+/* CARD */
 .card {
   position:absolute;
   bottom:110px;
@@ -64,6 +66,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 
 .clubMain { font-size:26px; font-weight:bold; margin:8px 0; }
 
+/* BOTTOM */
 .bottom {
   position:absolute;
   bottom:0;
@@ -71,14 +74,12 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   display:flex;
   z-index:1200;
 }
-
 .bottom button {
   flex:1;
   padding:18px;
   border:none;
   font-weight:bold;
 }
-
 .green { background:#2ecc71; }
 .red { background:#e74c3c; }
 .center { background:black; color:white; }
@@ -89,34 +90,33 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   border-radius:6px;
 }
 
-/* SCORECARD GRID */
-.scoreGrid {
-  overflow-x:auto;
-  margin-top:15px;
+/* SCORECARD */
+.scoreWrap {
+  margin-top:20px;
 }
 
-.scoreGrid table {
+.scoreTable {
+  width:100%;
   border-collapse:collapse;
-  min-width:900px;
 }
 
-.scoreGrid td {
+.scoreTable td {
   border:1px solid #444;
-  padding:6px;
+  padding:8px;
   text-align:center;
 }
 
-.scoreGrid input {
-  width:40px;
+.scoreTable input {
+  width:35px;
   background:black;
   border:none;
   color:white;
   text-align:center;
 }
 
-.totalCell {
+.sectionTitle {
+  margin-top:20px;
   font-weight:bold;
-  background:#111;
 }
 </style>
 </head>
@@ -152,7 +152,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 </div>
 
 <!-- SCORECARD -->
-<div id="scorecardScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:black;z-index:3000;padding:15px;overflow:auto;">
+<div id="scorecardScreen" style="display:none;position:absolute;top:0;width:100%;height:100%;background:black;z-index:3000;padding:15px;overflow:auto;">
 <h2>Scorecard</h2>
 <button onclick="closeScorecard()">⬅ Back</button>
 
@@ -162,7 +162,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 
 <pre id="scoreOCR"></pre>
 
-<div class="scoreGrid" id="scoreGrid"></div>
+<div class="scoreWrap" id="scoreWrap"></div>
 </div>
 
 <script>
@@ -174,16 +174,13 @@ L.tileLayer(
 ).addTo(map);
 
 let userMarker, holeMarker, holePos=null;
-let targetMarker=null;
 let guideLine=null;
 let rings=[],labels=[];
 let currentTarget=null;
 let mode="pin";
 
-let clubs=JSON.parse(localStorage.getItem("clubs")||"[]");
 let scores=JSON.parse(localStorage.getItem("scores")||JSON.stringify(Array(18).fill(0)));
 let pars=Array(18).fill(4);
-let shots=[];
 
 /* GPS */
 navigator.geolocation.watchPosition(pos=>{
@@ -199,13 +196,33 @@ update(lat,lng);
 
 /* UPDATE */
 function update(lat,lng){
-let target = holePos;
-if(!target) return;
+if(!holePos) return;
 
-let d=Math.round(map.distance([lat,lng],target));
+let d=Math.round(map.distance([lat,lng],holePos));
 
 strip.innerText="Distance: "+d+"m";
 distToPin.innerText=d+"m";
+
+/* RINGS (RESTORED) */
+rings.forEach(r=>map.removeLayer(r));
+labels.forEach(l=>map.removeLayer(l));
+rings=[];labels=[];
+
+[50,100,150].forEach(r=>{
+rings.push(L.circle(holePos,{radius:r,color:'white',fill:false}).addTo(map));
+labels.push(L.marker([holePos[0],holePos[1]+(r/111320)],{
+icon:L.divIcon({className:'label',html:r+"m"})
+}).addTo(map));
+});
+}
+
+/* PIN */
+function setPin(){
+map.once('click',e=>{
+holePos=[e.latlng.lat,e.latlng.lng];
+if(holeMarker) map.removeLayer(holeMarker);
+holeMarker=L.marker(holePos).addTo(map);
+});
 }
 
 /* SCORECARD */
@@ -213,12 +230,11 @@ function openScorecard(){
 scorecardScreen.style.display="block";
 renderScorecard();
 }
-
 function closeScorecard(){
 scorecardScreen.style.display="none";
 }
 
-/* OCR */
+/* OCR FIX */
 async function scanScorecard(){
 let file = scoreImg.files[0];
 if(!file) return;
@@ -228,9 +244,9 @@ scoreOCR.innerText="Scanning...";
 const {data:{text}}=await Tesseract.recognize(file,'eng');
 scoreOCR.innerText=text;
 
-let rawNums = text.match(/\d+/g)||[];
+let nums = text.match(/\d+/g)||[];
 
-let filtered = rawNums.map(n=>parseInt(n)).filter(n=>n>0 && n<=12);
+let filtered = nums.map(n=>parseInt(n)).filter(n=>n>0 && n<=12);
 
 for(let i=0;i<18;i++){
 scores[i]=filtered[i]||0;
@@ -240,38 +256,56 @@ localStorage.setItem("scores",JSON.stringify(scores));
 renderScorecard();
 }
 
-/* GRID */
+/* RENDER */
 function renderScorecard(){
 
-let front = scores.slice(0,9).reduce((a,b)=>a+b,0);
-let back = scores.slice(9).reduce((a,b)=>a+b,0);
-let total = front + back;
+let html="";
 
-let html="<table><tr><td>Hole</td>";
+/* FRONT 9 */
+html+="<div class='sectionTitle'>Front 9</div>";
+html+="<table class='scoreTable'><tr><td>Hole</td>";
 
-for(let i=1;i<=18;i++) html+="<td>"+i+"</td>";
-
-html+="<td class='totalCell'>OUT</td><td class='totalCell'>IN</td><td class='totalCell'>TOT</td></tr>";
+for(let i=1;i<=9;i++) html+="<td>"+i+"</td>";
+html+="<td>OUT</td></tr>";
 
 html+="<tr><td>Par</td>";
-pars.forEach((p,i)=>{
-html+=`<td><input value="${p}" onchange="pars[${i}]=parseInt(this.value)||4"></td>`;
-});
-html+=`<td class='totalCell'>${pars.slice(0,9).reduce((a,b)=>a+b,0)}</td>`;
-html+=`<td class='totalCell'>${pars.slice(9).reduce((a,b)=>a+b,0)}</td>`;
-html+=`<td class='totalCell'>${pars.reduce((a,b)=>a+b,0)}</td></tr>`;
+for(let i=0;i<9;i++){
+html+=`<td><input value="${pars[i]}" onchange="pars[${i}]=parseInt(this.value)||4"></td>`;
+}
+html+=`<td>${pars.slice(0,9).reduce((a,b)=>a+b,0)}</td></tr>`;
 
 html+="<tr><td>Score</td>";
-scores.forEach((s,i)=>{
-html+=`<td><input value="${s}" onchange="updateScore(${i},this.value)"></td>`;
-});
-html+=`<td class='totalCell'>${front}</td>`;
-html+=`<td class='totalCell'>${back}</td>`;
-html+=`<td class='totalCell'>${total}</td></tr>`;
-
+for(let i=0;i<9;i++){
+html+=`<td><input value="${scores[i]}" onchange="updateScore(${i},this.value)"></td>`;
+}
+html+=`<td>${scores.slice(0,9).reduce((a,b)=>a+b,0)}</td></tr>`;
 html+="</table>";
 
-scoreGrid.innerHTML=html;
+/* BACK 9 */
+html+="<div class='sectionTitle'>Back 9</div>";
+html+="<table class='scoreTable'><tr><td>Hole</td>";
+
+for(let i=10;i<=18;i++) html+="<td>"+i+"</td>";
+html+="<td>IN</td></tr>";
+
+html+="<tr><td>Par</td>";
+for(let i=9;i<18;i++){
+html+=`<td><input value="${pars[i]}" onchange="pars[${i}]=parseInt(this.value)||4"></td>`;
+}
+html+=`<td>${pars.slice(9).reduce((a,b)=>a+b,0)}</td></tr>`;
+
+html+="<tr><td>Score</td>";
+for(let i=9;i<18;i++){
+html+=`<td><input value="${scores[i]}" onchange="updateScore(${i},this.value)"></td>`;
+}
+html+=`<td>${scores.slice(9).reduce((a,b)=>a+b,0)}</td></tr>`;
+html+="</table>";
+
+/* TOTAL */
+let total = scores.reduce((a,b)=>a+b,0);
+html+=`<h3>Total: ${total}</h3>`;
+
+scoreWrap.innerHTML=html;
 }
 
 function updateScore(i,val){
@@ -280,27 +314,11 @@ localStorage.setItem("scores",JSON.stringify(scores));
 renderScorecard();
 }
 
-/* BASIC APP FUNCTIONS */
-function setPin(){map.once('click',e=>{
-holePos=[e.latlng.lat,e.latlng.lng];
-if(holeMarker) map.removeLayer(holeMarker);
-holeMarker=L.marker(holePos).addTo(map);
-});}
-
+/* BASIC */
 function toggleMode(){}
 function openPractice(){}
-
-function addShot(){
-if(userMarker){
-shots.push(userMarker.getLatLng());
-L.polyline(shots).addTo(map);
-}
-score.innerText=parseInt(score.innerText)+1;
-}
-
-function removeShot(){
-score.innerText=Math.max(0,score.innerText-1);
-}
+function addShot(){score.innerText=parseInt(score.innerText)+1;}
+function removeShot(){score.innerText=Math.max(0,score.innerText-1);}
 </script>
 
 </body>
