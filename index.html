@@ -17,7 +17,6 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   position:absolute; top:0; width:100%; text-align:center;
   padding:14px; background:rgba(0,0,0,0.6); z-index:1000;
 }
-
 .holebar {
   position:absolute; top:50px; width:100%; text-align:center;
   padding:6px; background:rgba(0,0,0,0.5); z-index:1000;
@@ -33,7 +32,6 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   gap:10px;
   z-index:1200;
 }
-
 .mapBtns button {
   background:rgba(30,30,30,0.9);
   color:white;
@@ -77,14 +75,12 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   display:flex;
   z-index:1200;
 }
-
 .bottom button {
   flex:1;
   padding:18px;
   border:none;
   font-weight:bold;
 }
-
 .green { background:#2ecc71; }
 .red { background:#e74c3c; }
 .center { background:black; color:white; }
@@ -102,13 +98,11 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   padding:12px 0;
   border-bottom:1px solid rgba(255,255,255,0.1);
 }
-
 .clubRight {
   display:flex;
   gap:10px;
   align-items:center;
 }
-
 .clubRight input {
   width:60px;
   background:transparent;
@@ -116,7 +110,6 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   color:white;
   text-align:right;
 }
-
 .removeBtn {
   background:none;
   border:none;
@@ -124,12 +117,11 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   font-size:18px;
 }
 
-/* SCORECARD REAL STYLE */
+/* SCORECARD */
 .scoreWrap {
   overflow-x:auto;
   margin-top:15px;
 }
-
 .scoreTable {
   border-collapse:collapse;
   min-width:1100px;
@@ -137,24 +129,19 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   color:black;
   font-size:12px;
 }
-
 .scoreTable td {
   border:1px solid #aaa;
   padding:6px;
   text-align:center;
 }
-
 .scoreTable .head {
   background:#eee;
   font-weight:bold;
 }
-
 .whiteTee { background:#f5f5f5; }
 .yellowTee { background:#ffe066; }
 .redTee { background:#ff6b6b; color:white; }
-
 .si { color:red; font-weight:bold; }
-
 .scoreInput {
   width:40px;
   border:none;
@@ -195,6 +182,17 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 <button class="red" onclick="removeShot()">-</button>
 </div>
 
+<!-- PRACTICE -->
+<div id="practiceScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:black;z-index:2000;padding:20px;overflow:auto;">
+<h2>Practice</h2>
+<button onclick="closePractice()">⬅ Back</button>
+<input type="file" id="imgUpload">
+<button onclick="handleImage()">Import</button>
+<button onclick="resetClubs()">Reset</button>
+<pre id="ocrOutput"></pre>
+<div id="clubs"></div>
+</div>
+
 <!-- SCORECARD -->
 <div id="scorecardScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:black;z-index:3000;padding:15px;overflow:auto;">
 <h2>Scorecard</h2>
@@ -223,6 +221,12 @@ L.tileLayer(
 let userMarker, holeMarker, holePos=null;
 let rings=[],labels=[];
 let scores=Array(18).fill(0);
+let pars=[5,4,3,5,4,3,4,3,4,4,3,5,3,4,5,4,3,4];
+let si=[8,6,18,14,2,12,16,10,4,1,11,7,13,3,9,5,17,15];
+
+let white=[533,394,140,465,421,204,312,155,425,462,164,507,208,422,525,386,185,355];
+let yellow=[503,317,135,460,381,179,306,147,360,424,130,500,193,410,469,351,137,319];
+let red=[442,317,128,422,344,153,272,127,355,382,106,436,161,392,429,349,118,284];
 
 /* GPS */
 navigator.geolocation.watchPosition(pos=>{
@@ -270,40 +274,60 @@ function openScorecard(){
 scorecardScreen.style.display="block";
 renderScorecard();
 }
-
 function closeScorecard(){
 scorecardScreen.style.display="none";
 }
 
+/* 🔥 SMART COLUMN OCR */
+async function scanScorecard(){
+let file = scoreImg.files[0];
+if(!file) return;
+
+const {data:{text}} = await Tesseract.recognize(file,'eng');
+scoreOCR.innerText = text;
+
+let lines = text.split("\n").map(l=>l.trim()).filter(l=>l.length>0);
+
+lines.forEach(line=>{
+let nums = line.replace(/[^0-9\s]/g," ")
+.split(" ")
+.map(n=>parseInt(n))
+.filter(n=>!isNaN(n));
+
+if(nums.length < 3) return;
+
+let hole = nums[0];
+if(hole < 1 || hole > 18) return;
+
+let i = hole-1;
+
+let p = nums.find(n=>n>=3 && n<=5);
+let s = nums.find(n=>n>=1 && n<=18 && n!==hole);
+let sc = nums.reverse().find(n=>n>=1 && n<=12);
+
+if(p) pars[i]=p;
+if(s) si[i]=s;
+if(sc) scores[i]=sc;
+});
+
+renderScorecard();
+}
+
 /* RENDER */
 function renderScorecard(){
-
-let pars=[5,4,3,5,4,3,4,3,4,4,3,5,3,4,5,4,3,4];
-let si=[8,6,18,14,2,12,16,10,4,1,11,7,13,3,9,5,17,15];
-
-let white=[533,394,140,465,421,204,312,155,425,462,164,507,208,422,525,386,185,355];
-let yellow=[503,317,135,460,381,179,306,147,360,424,130,500,193,410,469,351,137,319];
-let red=[442,317,128,422,344,153,272,127,355,382,106,436,161,392,429,349,118,284];
-
 let html="";
 
-/* HOLES */
 html+="<tr class='head'><td>Hole</td>";
 for(let i=1;i<=18;i++) html+="<td>"+i+"</td>";
 html+="</tr>";
 
-/* TEES */
 html+="<tr><td>White</td>"; white.forEach(v=>html+=`<td class='whiteTee'>${v}</td>`); html+="</tr>";
 html+="<tr><td>Yellow</td>"; yellow.forEach(v=>html+=`<td class='yellowTee'>${v}</td>`); html+="</tr>";
 html+="<tr><td>Red</td>"; red.forEach(v=>html+=`<td class='redTee'>${v}</td>`); html+="</tr>";
 
-/* PAR */
 html+="<tr><td>Par</td>"; pars.forEach(v=>html+=`<td>${v}</td>`); html+="</tr>";
-
-/* SI */
 html+="<tr><td>S.I</td>"; si.forEach(v=>html+=`<td class='si'>${v}</td>`); html+="</tr>";
 
-/* SCORE */
 html+="<tr><td>Score</td>";
 scores.forEach((s,i)=>{
 html+=`<td><input class='scoreInput' value='${s}' onchange='scores[${i}]=this.value'></td>`;
@@ -313,17 +337,10 @@ html+="</tr>";
 scoreTable.innerHTML=html;
 }
 
-async function scanScorecard(){
-let file = scoreImg.files[0];
-if(!file) return;
-
-const {data:{text}}=await Tesseract.recognize(file,'eng');
-scoreOCR.innerText=text;
-}
-
-/* KEEP EXISTING FUNCTIONS */
+/* KEEP EVERYTHING */
 function toggleMode(){}
 function openPractice(){}
+function closePractice(){practiceScreen.style.display="none";}
 function addShot(){score.innerText=parseInt(score.innerText)+1;}
 function removeShot(){score.innerText=Math.max(0,score.innerText-1);}
 </script>
