@@ -117,30 +117,18 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   font-size:18px;
 }
 
-/* SCORECARD (NEW STYLE) */
-.scoreList { margin-top:20px; }
-.scoreRow {
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin:10px 0;
+/* SCORECARD */
+.scoreTable td {
+  border:1px solid #444;
+  padding:6px;
+  text-align:center;
 }
-.holeNum { width:30px; font-size:18px; }
-.parInput {
-  flex:1;
-  padding:12px;
-  border-radius:10px;
+.scoreTable input {
+  width:40px;
+  background:black;
+  color:white;
   border:none;
-  background:#bbb;
-  color:black;
-}
-.scoreInput {
-  flex:1;
-  padding:12px;
-  border-radius:10px;
-  border:none;
-  background:#ddd;
-  color:black;
+  text-align:center;
 }
 </style>
 </head>
@@ -189,7 +177,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 </div>
 
 <!-- SCORECARD -->
-<div id="scorecardScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:black;z-index:3000;padding:20px;overflow:auto;">
+<div id="scorecardScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:black;z-index:3000;padding:15px;overflow:auto;">
 <h2>Scorecard</h2>
 <button onclick="closeScorecard()">⬅ Back</button>
 
@@ -198,7 +186,11 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 
 <pre id="scoreOCR"></pre>
 
-<div class="scoreList" id="scoreList"></div>
+<div style="overflow-x:auto;">
+<table class="scoreTable" style="min-width:900px;">
+<tbody id="scoreTable"></tbody>
+</table>
+</div>
 </div>
 
 <script>
@@ -210,13 +202,9 @@ L.tileLayer(
 ).addTo(map);
 
 let userMarker, holeMarker, holePos=null;
-let guideLine=null;
 let rings=[],labels=[];
-let currentTarget=null;
-let mode="pin";
-
-let clubs=JSON.parse(localStorage.getItem("clubs")||"[]");
 let scores=JSON.parse(localStorage.getItem("scores")||JSON.stringify(Array(18).fill(0)));
+let pars=Array(18).fill(4);
 
 /* GPS */
 navigator.geolocation.watchPosition(pos=>{
@@ -235,11 +223,9 @@ function update(lat,lng){
 if(!holePos) return;
 
 let d=Math.round(map.distance([lat,lng],holePos));
-
 strip.innerText="Distance: "+d+"m";
-distToPin.innerText=d+"m";
 
-/* RINGS RESTORED */
+/* RINGS */
 rings.forEach(r=>map.removeLayer(r));
 labels.forEach(l=>map.removeLayer(l));
 rings=[];labels=[];
@@ -289,18 +275,42 @@ localStorage.setItem("scores",JSON.stringify(scores));
 renderScorecard();
 }
 
-/* RENDER */
+/* RENDER GRID */
 function renderScorecard(){
+
 let html="";
-for(let i=0;i<18;i++){
-html+=`
-<div class="scoreRow">
-  <div class="holeNum">${i+1}</div>
-  <input class="parInput" value="4">
-  <input class="scoreInput" value="${scores[i]}" onchange="updateScore(${i},this.value)">
-</div>`;
-}
-scoreList.innerHTML=html;
+
+/* HOLES */
+html+="<tr><td>Hole</td>";
+for(let i=1;i<=18;i++) html+="<td>"+i+"</td>";
+html+="<td>OUT</td><td>IN</td><td>TOT</td></tr>";
+
+/* PAR */
+html+="<tr><td>Par</td>";
+pars.forEach((p,i)=>{
+html+=`<td><input value="${p}"></td>`;
+});
+html+=`<td>${pars.slice(0,9).reduce((a,b)=>a+b,0)}</td>`;
+html+=`<td>${pars.slice(9).reduce((a,b)=>a+b,0)}</td>`;
+html+=`<td>${pars.reduce((a,b)=>a+b,0)}</td></tr>`;
+
+/* SI */
+html+="<tr><td>S.I</td>";
+for(let i=1;i<=18;i++) html+=`<td style="color:red">${i}</td>`;
+html+="<td></td><td></td><td></td></tr>`";
+
+/* SCORE */
+html+="<tr><td>Score</td>";
+scores.forEach((s,i)=>{
+html+=`<td><input value="${s}" onchange="updateScore(${i},this.value)"></td>`;
+});
+
+let front = scores.slice(0,9).reduce((a,b)=>a+b,0);
+let back = scores.slice(9).reduce((a,b)=>a+b,0);
+
+html+=`<td>${front}</td><td>${back}</td><td>${front+back}</td></tr>`;
+
+scoreTable.innerHTML=html;
 }
 
 function updateScore(i,val){
@@ -308,7 +318,7 @@ scores[i]=parseInt(val)||0;
 localStorage.setItem("scores",JSON.stringify(scores));
 }
 
-/* STUBS (unchanged) */
+/* BASIC */
 function toggleMode(){}
 function openPractice(){}
 function closePractice(){practiceScreen.style.display="none";}
