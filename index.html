@@ -236,13 +236,69 @@ let white=[533,394,140,465,421,204,312,155,425,462,164,507,208,422,525,386,185,3
 let yellow=[503,317,135,460,381,179,306,147,360,424,130,500,193,410,469,351,137,319];
 let red=[442,317,128,422,344,153,272,127,355,382,106,436,161,392,429,349,118,284];
 
-/* number dropdown helper */
+/* DROPDOWN HELPER */
 function numberOptions(val){
 let html="<option value=''>-</option>";
 for(let i=0;i<=20;i++){
 html+=`<option value="${i}" ${val==i?"selected":""}>${i}</option>`;
 }
 return html;
+}
+
+/* GPS */
+navigator.geolocation.watchPosition(pos=>{
+let lat=pos.coords.latitude,lng=pos.coords.longitude;
+
+if(!userMarker){
+userMarker=L.marker([lat,lng]).addTo(map);
+map.setView([lat,lng],18);
+}else userMarker.setLatLng([lat,lng]);
+
+update(lat,lng);
+});
+
+/* UPDATE */
+function update(lat,lng){
+if(!holePos) return;
+
+let d=Math.round(map.distance([lat,lng],holePos));
+strip.innerText="Distance: "+d+"m";
+
+rings.forEach(r=>map.removeLayer(r));
+labels.forEach(l=>map.removeLayer(l));
+rings=[];labels=[];
+
+[50,100,150].forEach(r=>{
+rings.push(L.circle(holePos,{radius:r,color:'white',fill:false}).addTo(map));
+labels.push(L.marker([holePos[0],holePos[1]+(r/111320)],{
+icon:L.divIcon({className:'label',html:r+"m"})
+}).addTo(map));
+});
+}
+
+function setPin(){
+map.once('click',e=>{
+holePos=[e.latlng.lat,e.latlng.lng];
+if(holeMarker) map.removeLayer(holeMarker);
+holeMarker=L.marker(holePos).addTo(map);
+});
+}
+
+/* SCORECARD */
+function openScorecard(){
+scorecardScreen.style.display="block";
+renderScorecard();
+}
+function closeScorecard(){
+scorecardScreen.style.display="none";
+}
+
+async function scanScorecard(){
+let file = scoreImg.files[0];
+if(!file) return;
+
+const {data:{text}} = await Tesseract.recognize(file,'eng');
+scoreOCR.innerText = text;
 }
 
 /* RENDER */
@@ -262,30 +318,36 @@ html+="<tr><td>S.I</td>"; si.forEach(v=>html+=`<td class='si'>${v}</td>`); html+
 
 html+="<tr><td>FH</td>";
 fh.forEach((v,i)=>{
-html+=`<td><select class="selectYN" onchange="fh[${i}]=this.value">
+html+=`<td>
+<select class="selectYN" onchange="fh[${i}]=this.value">
 <option value="">-</option>
 <option value="Y" ${v==="Y"?"selected":""}>Y</option>
 <option value="N" ${v==="N"?"selected":""}>N</option>
-</select></td>`;
+</select>
+</td>`;
 });
 html+="</tr>";
 
 html+="<tr><td>GIR</td>";
 gir.forEach((v,i)=>{
-html+=`<td><select class="selectYN" onchange="gir[${i}]=this.value">
+html+=`<td>
+<select class="selectYN" onchange="gir[${i}]=this.value">
 <option value="">-</option>
 <option value="Y" ${v==="Y"?"selected":""}>Y</option>
 <option value="N" ${v==="N"?"selected":""}>N</option>
-</select></td>`;
+</select>
+</td>`;
 });
 html+="</tr>";
 
+/* ✅ UPDATED PUTTS */
 html+="<tr><td>PUTTS</td>";
 putts.forEach((v,i)=>{
 html+=`<td><select class="selectNum" onchange="putts[${i}]=this.value">${numberOptions(v)}</select></td>`;
 });
 html+="</tr>";
 
+/* ✅ UPDATED SCORE */
 html+="<tr><td>Score</td>";
 scores.forEach((v,i)=>{
 html+=`<td><select class="selectNum" onchange="scores[${i}]=this.value">${numberOptions(v)}</select></td>`;
