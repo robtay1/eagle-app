@@ -142,10 +142,16 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 .yellowTee { background:#ffe066; }
 .redTee { background:#ff6b6b; color:white; }
 .si { color:red; font-weight:bold; }
+
 .scoreInput {
   width:40px;
   border:none;
   text-align:center;
+}
+
+/* NEW: dropdown styling */
+.selectYN {
+  width:60px;
 }
 </style>
 </head>
@@ -224,7 +230,6 @@ let scores=Array(18).fill(0);
 let pars=[5,4,3,5,4,3,4,3,4,4,3,5,3,4,5,4,3,4];
 let si=[8,6,18,14,2,12,16,10,4,1,11,7,13,3,9,5,17,15];
 
-/* NEW TRACKING */
 let fh=Array(18).fill("");
 let gir=Array(18).fill("");
 let putts=Array(18).fill("");
@@ -252,7 +257,6 @@ if(!holePos) return;
 let d=Math.round(map.distance([lat,lng],holePos));
 strip.innerText="Distance: "+d+"m";
 
-/* RINGS */
 rings.forEach(r=>map.removeLayer(r));
 labels.forEach(l=>map.removeLayer(l));
 rings=[];labels=[];
@@ -265,7 +269,6 @@ icon:L.divIcon({className:'label',html:r+"m"})
 });
 }
 
-/* PIN */
 function setPin(){
 map.once('click',e=>{
 holePos=[e.latlng.lat,e.latlng.lng];
@@ -283,7 +286,6 @@ function closeScorecard(){
 scorecardScreen.style.display="none";
 }
 
-/* OCR */
 async function scanScorecard(){
 let file = scoreImg.files[0];
 if(!file) return;
@@ -307,15 +309,33 @@ html+="<tr><td>Red</td>"; red.forEach(v=>html+=`<td class='redTee'>${v}</td>`); 
 html+="<tr><td>Par</td>"; pars.forEach(v=>html+=`<td>${v}</td>`); html+="</tr>";
 html+="<tr><td>S.I</td>"; si.forEach(v=>html+=`<td class='si'>${v}</td>`); html+="</tr>";
 
-/* NEW ROWS */
+/* FH YES/NO */
 html+="<tr><td>FH</td>";
-fh.forEach((v,i)=> html+=`<td><input class='scoreInput' value='${v}' onchange='fh[${i}]=this.value'></td>`);
+fh.forEach((v,i)=>{
+html+=`<td>
+<select class="selectYN" onchange="fh[${i}]=this.value">
+<option value="">-</option>
+<option value="Y" ${v==="Y"?"selected":""}>Y</option>
+<option value="N" ${v==="N"?"selected":""}>N</option>
+</select>
+</td>`;
+});
 html+="</tr>";
 
+/* GIR YES/NO */
 html+="<tr><td>GIR</td>";
-gir.forEach((v,i)=> html+=`<td><input class='scoreInput' value='${v}' onchange='gir[${i}]=this.value'></td>`);
+gir.forEach((v,i)=>{
+html+=`<td>
+<select class="selectYN" onchange="gir[${i}]=this.value">
+<option value="">-</option>
+<option value="Y" ${v==="Y"?"selected":""}>Y</option>
+<option value="N" ${v==="N"?"selected":""}>N</option>
+</select>
+</td>`;
+});
 html+="</tr>";
 
+/* PUTTS unchanged */
 html+="<tr><td>PUTTS</td>";
 putts.forEach((v,i)=> html+=`<td><input class='scoreInput' value='${v}' onchange='putts[${i}]=this.value'></td>`);
 html+="</tr>";
