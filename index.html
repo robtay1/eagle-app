@@ -12,6 +12,7 @@
 body { margin:0; font-family:-apple-system; background:black; color:white; }
 #map { position:absolute; top:0; bottom:0; width:100%; }
 
+/* HEADER */
 .header {
   position:absolute; top:0; width:100%; text-align:center;
   padding:14px; background:rgba(0,0,0,0.6); z-index:1000;
@@ -21,6 +22,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   padding:6px; background:rgba(0,0,0,0.5); z-index:1000;
 }
 
+/* BUTTONS */
 .mapBtns {
   position:absolute;
   bottom:290px;
@@ -39,6 +41,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   font-weight:bold;
 }
 
+/* STRIP */
 .strip {
   position:absolute;
   bottom:250px;
@@ -49,6 +52,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   z-index:1100;
 }
 
+/* CARD */
 .card {
   position:absolute;
   bottom:110px;
@@ -63,6 +67,7 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 .clubMain { font-size:26px; font-weight:bold; margin:8px 0; }
 .caddieList div { font-size:13px; margin:4px 0; }
 
+/* BOTTOM */
 .bottom {
   position:absolute;
   bottom:0;
@@ -214,6 +219,8 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 </div>
 
 <script>
+
+/* ================= MAP ================= */
 let map = L.map('map').setView([51.505,-0.09],13);
 
 L.tileLayer(
@@ -223,9 +230,9 @@ L.tileLayer(
 
 let userMarker, holeMarker, holePos=null;
 let rings=[],labels=[];
-let scores=Array(18).fill(0);
 
-/* ORIGINAL ARRAYS (KEPT) */
+/* ================= DATA ================= */
+let scores=Array(18).fill(0);
 let pars=[5,4,3,5,4,3,4,3,4,4,3,5,3,4,5,4,3,4];
 let si=[8,6,18,14,2,12,16,10,4,1,11,7,13,3,9,5,17,15];
 
@@ -237,7 +244,7 @@ let white=[533,394,140,465,421,204,312,155,425,462,164,507,208,422,525,386,185,3
 let yellow=[503,317,135,460,381,179,306,147,360,424,130,500,193,410,469,351,137,319];
 let red=[442,317,128,422,344,153,272,127,355,382,106,436,161,392,429,349,118,284];
 
-/* CLUB SYSTEM (NEW SAFE ADDITION) */
+/* ================= CLUB SYSTEM ================= */
 let clubData = JSON.parse(localStorage.getItem("clubs")) || [
 {name:"Driver",type:"WOOD",carry:178},
 {name:"7-wood",type:"WOOD",carry:130},
@@ -264,7 +271,7 @@ best=c;
 return best;
 }
 
-/* GPS */
+/* ================= GPS ================= */
 navigator.geolocation.watchPosition(pos=>{
 let lat=pos.coords.latitude,lng=pos.coords.longitude;
 
@@ -276,6 +283,7 @@ map.setView([lat,lng],18);
 update(lat,lng);
 });
 
+/* ================= UPDATE ================= */
 function update(lat,lng){
 if(!holePos) return;
 
@@ -283,12 +291,62 @@ let d=Math.round(map.distance([lat,lng],holePos));
 strip.innerText="Distance: "+d+"m";
 distToPin.innerText=d+"m";
 
-/* SMART CLUB */
+/* CLUB PICK */
 let pick=getBestClub(d);
 club.innerText=pick.name+" ("+pick.carry+" yd)";
+
+/* RINGS (FIXED) */
+rings.forEach(r=>map.removeLayer(r));
+labels.forEach(l=>map.removeLayer(l));
+rings=[];labels=[];
+
+[50,100,150].forEach(r=>{
+rings.push(L.circle(holePos,{radius:r,color:'white',fill:false}).addTo(map));
+labels.push(L.marker([holePos[0],holePos[1]+(r/111320)],{
+icon:L.divIcon({className:'label',html:r+"m"})
+}).addTo(map));
+});
 }
 
-/* PRACTICE UI */
+/* ================= PIN ================= */
+function setPin(){
+map.once('click',e=>{
+holePos=[e.latlng.lat,e.latlng.lng];
+if(holeMarker) map.removeLayer(holeMarker);
+holeMarker=L.marker(holePos).addTo(map);
+});
+}
+
+/* ================= OCR ================= */
+async function handleImage(){
+let file = imgUpload.files[0];
+if(!file) return;
+
+ocrOutput.innerText="Scanning...";
+
+const {data:{text}} = await Tesseract.recognize(file,'eng');
+
+ocrOutput.innerText=text;
+
+/* SIMPLE DISTANCE PARSE */
+let nums=text.match(/\d{2,3}/g);
+if(nums){
+nums=nums.map(n=>parseInt(n)).filter(n=>n>40 && n<300);
+for(let i=0;i<clubData.length && i<nums.length;i++){
+clubData[i].carry=nums[i];
+}
+saveClubs();
+renderClubs();
+alert("Clubs updated");
+}
+}
+
+function resetClubs(){
+localStorage.removeItem("clubs");
+location.reload();
+}
+
+/* ================= PRACTICE ================= */
 function openPractice(){
 practiceScreen.style.display="block";
 renderClubs();
@@ -300,28 +358,21 @@ let grouped={WOOD:[],IRON:[],WEDGE:[]};
 clubData.forEach((c,i)=>grouped[c.type].push({...c,index:i}));
 
 let html="";
-function section(title,arr){
-if(arr.length===0) return "";
-let h=`<h3>${title} (${arr.length})</h3>`;
-arr.forEach(c=>{
-h+=`
+for(let type in grouped){
+if(grouped[type].length){
+html+=`<h3>${type}</h3>`;
+grouped[type].forEach(c=>{
+html+=`
 <div class="clubRow">
-<div>
-<div style="font-weight:bold">${c.name}</div>
-<div style="font-size:12px;opacity:0.6">${c.type}</div>
-</div>
+<div>${c.name}</div>
 <div class="clubRight">
 <input value="${c.carry}" onchange="updateCarry(${c.index},this.value)"> yd
 <button class="removeBtn" onclick="removeClub(${c.index})">✕</button>
 </div>
 </div>`;
 });
-return h;
 }
-html+=section("WOODS",grouped.WOOD);
-html+=section("IRONS",grouped.IRON);
-html+=section("WEDGES",grouped.WEDGE);
-
+}
 clubs.innerHTML=html;
 }
 
@@ -344,11 +395,7 @@ saveClubs();
 renderClubs();
 }
 
-/* OCR PLACEHOLDERS (KEPT SAFE) */
-async function handleImage(){}
-function resetClubs(){}
-
-/* SCORECARD */
+/* ================= SCORECARD ================= */
 function numberOptions(val){
 let html="<option value=''>-</option>";
 for(let i=0;i<=20;i++){
@@ -422,18 +469,11 @@ html+="</tr>";
 scoreTable.innerHTML=html;
 }
 
-/* ORIGINAL */
+/* ================= OTHER ================= */
 function toggleMode(){}
-function setPin(){
-map.once('click',e=>{
-holePos=[e.latlng.lat,e.latlng.lng];
-if(holeMarker) map.removeLayer(holeMarker);
-holeMarker=L.marker(holePos).addTo(map);
-});
-}
 function addShot(){score.innerText=parseInt(score.innerText)+1;}
 function removeShot(){score.innerText=Math.max(0,score.innerText-1);}
-</script>
 
+</script>
 </body>
 </html>
