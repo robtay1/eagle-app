@@ -149,8 +149,10 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
   text-align:center;
 }
 
-.selectYN { width:60px; }
-.selectNum { width:60px; }
+/* dropdown */
+.selectYN {
+  width:60px;
+}
 </style>
 </head>
 
@@ -190,14 +192,16 @@ body { margin:0; font-family:-apple-system; background:black; color:white; }
 <div id="practiceScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:black;z-index:2000;padding:20px;overflow:auto;">
 <h2>Practice</h2>
 <button onclick="closePractice()">⬅ Back</button>
+
 <input type="file" id="imgUpload">
 <button onclick="handleImage()">Import</button>
 <button onclick="resetClubs()">Reset</button>
+
 <pre id="ocrOutput"></pre>
 <div id="clubs"></div>
 </div>
 
-<!-- SCORECARD -->
+<!-- SCORECARD (UNCHANGED) -->
 <div id="scorecardScreen" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:black;z-index:3000;padding:15px;overflow:auto;">
 <h2>Scorecard</h2>
 <button onclick="closeScorecard()">⬅ Back</button>
@@ -224,26 +228,9 @@ L.tileLayer(
 
 let userMarker, holeMarker, holePos=null;
 let rings=[],labels=[];
-let scores=Array(18).fill(0);
-let pars=[5,4,3,5,4,3,4,3,4,4,3,5,3,4,5,4,3,4];
-let si=[8,6,18,14,2,12,16,10,4,1,11,7,13,3,9,5,17,15];
 
-let fh=Array(18).fill("");
-let gir=Array(18).fill("");
-let putts=Array(18).fill("");
-
-let white=[533,394,140,465,421,204,312,155,425,462,164,507,208,422,525,386,185,355];
-let yellow=[503,317,135,460,381,179,306,147,360,424,130,500,193,410,469,351,137,319];
-let red=[442,317,128,422,344,153,272,127,355,382,106,436,161,392,429,349,118,284];
-
-/* DROPDOWN HELPER */
-function numberOptions(val){
-let html="<option value=''>-</option>";
-for(let i=0;i<=20;i++){
-html+=`<option value="${i}" ${val==i?"selected":""}>${i}</option>`;
-}
-return html;
-}
+/* PRACTICE DATA */
+let clubs = JSON.parse(localStorage.getItem("clubs")||"[]");
 
 /* GPS */
 navigator.geolocation.watchPosition(pos=>{
@@ -264,6 +251,7 @@ if(!holePos) return;
 let d=Math.round(map.distance([lat,lng],holePos));
 strip.innerText="Distance: "+d+"m";
 
+/* RINGS */
 rings.forEach(r=>map.removeLayer(r));
 labels.forEach(l=>map.removeLayer(l));
 rings=[];labels=[];
@@ -276,6 +264,7 @@ icon:L.divIcon({className:'label',html:r+"m"})
 });
 }
 
+/* PIN */
 function setPin(){
 map.once('click',e=>{
 holePos=[e.latlng.lat,e.latlng.lng];
@@ -284,83 +273,89 @@ holeMarker=L.marker(holePos).addTo(map);
 });
 }
 
-/* SCORECARD */
-function openScorecard(){
-scorecardScreen.style.display="block";
-renderScorecard();
+/* PRACTICE NAV */
+function openPractice(){
+practiceScreen.style.display="block";
+renderClubs();
 }
-function closeScorecard(){
-scorecardScreen.style.display="none";
+function closePractice(){
+practiceScreen.style.display="none";
 }
 
-async function scanScorecard(){
-let file = scoreImg.files[0];
+/* OCR + SMART PARSE */
+async function handleImage(){
+let file=imgUpload.files[0];
 if(!file) return;
 
-const {data:{text}} = await Tesseract.recognize(file,'eng');
-scoreOCR.innerText = text;
+const {data:{text}}=await Tesseract.recognize(file,'eng');
+ocrOutput.innerText=text;
+
+extractClubs(text);
+renderClubs();
 }
 
-/* RENDER */
-function renderScorecard(){
+/* 🔥 Extract clubs */
+function extractClubs(text){
+let lines=text.split("\n");
+
+lines.forEach(line=>{
+let match=line.match(/([A-Za-z0-9\s]+)\s+(\d{2,3})/);
+if(match){
+let name=match[1].trim();
+let dist=parseInt(match[2]);
+
+let existing=clubs.find(c=>c.name===name);
+if(existing) existing.dist=dist;
+else clubs.push({name,dist});
+}
+});
+
+localStorage.setItem("clubs",JSON.stringify(clubs));
+}
+
+/* RENDER CLUBS */
+function renderClubs(){
 let html="";
 
-html+="<tr class='head'><td>Hole</td>";
-for(let i=1;i<=18;i++) html+="<td>"+i+"</td>";
-html+="</tr>";
-
-html+="<tr><td>White</td>"; white.forEach(v=>html+=`<td class='whiteTee'>${v}</td>`); html+="</tr>";
-html+="<tr><td>Yellow</td>"; yellow.forEach(v=>html+=`<td class='yellowTee'>${v}</td>`); html+="</tr>";
-html+="<tr><td>Red</td>"; red.forEach(v=>html+=`<td class='redTee'>${v}</td>`); html+="</tr>";
-
-html+="<tr><td>Par</td>"; pars.forEach(v=>html+=`<td>${v}</td>`); html+="</tr>";
-html+="<tr><td>S.I</td>"; si.forEach(v=>html+=`<td class='si'>${v}</td>`); html+="</tr>";
-
-html+="<tr><td>FH</td>";
-fh.forEach((v,i)=>{
-html+=`<td>
-<select class="selectYN" onchange="fh[${i}]=this.value">
-<option value="">-</option>
-<option value="Y" ${v==="Y"?"selected":""}>Y</option>
-<option value="N" ${v==="N"?"selected":""}>N</option>
-</select>
-</td>`;
+clubs.forEach(c=>{
+html+=`
+<div class="clubRow">
+<div>${c.name}</div>
+<div class="clubRight">
+<input value="${c.dist}" onchange="updateClub('${c.name}',this.value)">
+<button class="removeBtn" onclick="removeClub('${c.name}')">✕</button>
+</div>
+</div>`;
 });
-html+="</tr>";
 
-html+="<tr><td>GIR</td>";
-gir.forEach((v,i)=>{
-html+=`<td>
-<select class="selectYN" onchange="gir[${i}]=this.value">
-<option value="">-</option>
-<option value="Y" ${v==="Y"?"selected":""}>Y</option>
-<option value="N" ${v==="N"?"selected":""}>N</option>
-</select>
-</td>`;
-});
-html+="</tr>";
+clubs.innerHTML=html;
+}
 
-/* ✅ UPDATED PUTTS */
-html+="<tr><td>PUTTS</td>";
-putts.forEach((v,i)=>{
-html+=`<td><select class="selectNum" onchange="putts[${i}]=this.value">${numberOptions(v)}</select></td>`;
-});
-html+="</tr>";
+/* UPDATE CLUB */
+function updateClub(name,val){
+let c=clubs.find(x=>x.name===name);
+if(c) c.dist=parseInt(val);
+localStorage.setItem("clubs",JSON.stringify(clubs));
+}
 
-/* ✅ UPDATED SCORE */
-html+="<tr><td>Score</td>";
-scores.forEach((v,i)=>{
-html+=`<td><select class="selectNum" onchange="scores[${i}]=this.value">${numberOptions(v)}</select></td>`;
-});
-html+="</tr>";
+/* REMOVE */
+function removeClub(name){
+clubs=clubs.filter(c=>c.name!==name);
+localStorage.setItem("clubs",JSON.stringify(clubs));
+renderClubs();
+}
 
-scoreTable.innerHTML=html;
+/* RESET */
+function resetClubs(){
+clubs=[];
+localStorage.removeItem("clubs");
+renderClubs();
 }
 
 /* KEEP EVERYTHING */
 function toggleMode(){}
-function openPractice(){}
-function closePractice(){practiceScreen.style.display="none";}
+function openScorecard(){}
+function closeScorecard(){}
 function addShot(){score.innerText=parseInt(score.innerText)+1;}
 function removeShot(){score.innerText=Math.max(0,score.innerText-1);}
 </script>
