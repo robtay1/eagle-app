@@ -224,6 +224,11 @@ let scores=Array(18).fill(0);
 let pars=[5,4,3,5,4,3,4,3,4,4,3,5,3,4,5,4,3,4];
 let si=[8,6,18,14,2,12,16,10,4,1,11,7,13,3,9,5,17,15];
 
+/* NEW TRACKING */
+let fh=Array(18).fill("");
+let gir=Array(18).fill("");
+let putts=Array(18).fill("");
+
 let white=[533,394,140,465,421,204,312,155,425,462,164,507,208,422,525,386,185,355];
 let yellow=[503,317,135,460,381,179,306,147,360,424,130,500,193,410,469,351,137,319];
 let red=[442,317,128,422,344,153,272,127,355,382,106,436,161,392,429,349,118,284];
@@ -278,39 +283,13 @@ function closeScorecard(){
 scorecardScreen.style.display="none";
 }
 
-/* 🔥 SMART COLUMN OCR */
+/* OCR */
 async function scanScorecard(){
 let file = scoreImg.files[0];
 if(!file) return;
 
 const {data:{text}} = await Tesseract.recognize(file,'eng');
 scoreOCR.innerText = text;
-
-let lines = text.split("\n").map(l=>l.trim()).filter(l=>l.length>0);
-
-lines.forEach(line=>{
-let nums = line.replace(/[^0-9\s]/g," ")
-.split(" ")
-.map(n=>parseInt(n))
-.filter(n=>!isNaN(n));
-
-if(nums.length < 3) return;
-
-let hole = nums[0];
-if(hole < 1 || hole > 18) return;
-
-let i = hole-1;
-
-let p = nums.find(n=>n>=3 && n<=5);
-let s = nums.find(n=>n>=1 && n<=18 && n!==hole);
-let sc = nums.reverse().find(n=>n>=1 && n<=12);
-
-if(p) pars[i]=p;
-if(s) si[i]=s;
-if(sc) scores[i]=sc;
-});
-
-renderScorecard();
 }
 
 /* RENDER */
@@ -327,6 +306,19 @@ html+="<tr><td>Red</td>"; red.forEach(v=>html+=`<td class='redTee'>${v}</td>`); 
 
 html+="<tr><td>Par</td>"; pars.forEach(v=>html+=`<td>${v}</td>`); html+="</tr>";
 html+="<tr><td>S.I</td>"; si.forEach(v=>html+=`<td class='si'>${v}</td>`); html+="</tr>";
+
+/* NEW ROWS */
+html+="<tr><td>FH</td>";
+fh.forEach((v,i)=> html+=`<td><input class='scoreInput' value='${v}' onchange='fh[${i}]=this.value'></td>`);
+html+="</tr>";
+
+html+="<tr><td>GIR</td>";
+gir.forEach((v,i)=> html+=`<td><input class='scoreInput' value='${v}' onchange='gir[${i}]=this.value'></td>`);
+html+="</tr>";
+
+html+="<tr><td>PUTTS</td>";
+putts.forEach((v,i)=> html+=`<td><input class='scoreInput' value='${v}' onchange='putts[${i}]=this.value'></td>`);
+html+="</tr>";
 
 html+="<tr><td>Score</td>";
 scores.forEach((s,i)=>{
