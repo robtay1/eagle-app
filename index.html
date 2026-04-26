@@ -354,8 +354,8 @@ renderClubs();
 
 /* KEEP EVERYTHING */
 function toggleMode(){}
-function openScorecard(){}
-function closeScorecard(){}
+function openScorecard(){scorecard.style.display="block";renderscorecard();}
+function closeScorecard(){scorecardscreen.style.display="none";}
 function addShot(){score.innerText=parseInt(score.innerText)+1;}
 function removeShot(){score.innerText=Math.max(0,score.innerText-1);}
 </script>
