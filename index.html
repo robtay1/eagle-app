@@ -407,18 +407,48 @@ return html;
 function openScorecard(){
 scorecardScreen.style.display="block";
 renderScorecard();
+}async function scanScorecard(){
+let file = scoreImg.files[0];
+if(!file) return;
+
+scoreOCR.innerText = "Scanning...";
+
+const {data:{text}} = await Tesseract.recognize(file,'eng');
+
+scoreOCR.innerText = text;
+
+/* ===== EXTRACT NUMBERS ===== */
+let nums = text.match(/\d+/g);
+if(!nums){
+alert("No numbers detected");
+return;
+}
+
+nums = nums.map(n=>parseInt(n));
+
+/* ===== UPDATE SCORES ===== */
+let idx = 0;
+
+for(let i=0;i<nums.length;i++){
+let n = nums[i];
+
+/* realistic golf score per hole */
+if(n>=1 && n<=12 && idx < 18){
+scores[idx] = n;
+idx++;
+}
+}
+
+/* ===== REFRESH TABLE ===== */
+renderScorecard();
+
+alert("Scorecard updated");
 }
 function closeScorecard(){
 scorecardScreen.style.display="none";
 }
 
-async function scanScorecard(){
-let file = scoreImg.files[0];
-if(!file) return;
 
-const {data:{text}} = await Tesseract.recognize(file,'eng');
-scoreOCR.innerText = text;
-}
 
 function renderScorecard(){
 let html="";
