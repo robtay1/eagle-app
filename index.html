@@ -408,6 +408,7 @@ function openScorecard(){
 scorecardScreen.style.display="block";
 renderScorecard();
 }
+
 async function scanScorecard(){
 let file = scoreImg.files[0];
 if(!file) return;
@@ -419,6 +420,75 @@ const {data:{text}} = await Tesseract.recognize(file,'eng');
 scoreOCR.innerText = text;
 
 /* SPLIT INTO LINES */
+let lines = text.split("\n").map(l=>l.trim()).filter(l=>l);
+
+/* EXTRACT NUMBERS PER LINE */
+function getNums(line){
+let m = line.match(/\d+/g);
+return m ? m.map(n=>parseInt(n)) : [];
+}
+
+/* STORE CANDIDATES */
+let yardageRows = [];
+let parRow = null;
+let siRow = null;
+
+/* ANALYSE LINES */
+lines.forEach(line=>{
+let nums = getNums(line);
+
+/* LOWERED THRESHOLD */
+if(nums.length < 3) return;
+
+/* YARDAGES (100–550 typical) */
+let yardCount = nums.filter(n=>n>100 && n<600).length;
+
+/* PAR (mostly 3–5) */
+let parCount = nums.filter(n=>n>=3 && n<=5).length;
+
+/* SI (1–18 spread) */
+let siCount = nums.filter(n=>n>=1 && n<=18).length;
+
+/* CLASSIFY (no more else-if blocking) */
+if(yardCount >= 3){
+yardageRows.push(nums);
+}
+
+if(parCount >= 4 && !parRow){
+parRow = nums;
+}
+
+if(siCount >= 6 && !siRow){
+siRow = nums;
+}
+});
+
+/* ASSIGN YARDAGES */
+if(yardageRows.length >= 3){
+white = yardageRows[0].slice(0,18);
+yellow = yardageRows[1].slice(0,18);
+red = yardageRows[2].slice(0,18);
+}
+
+/* ASSIGN PAR */
+if(parRow){
+for(let i=0;i<18;i++){
+pars[i] = parRow[i] || pars[i];
+}
+}
+
+/* ASSIGN SI */
+if(siRow){
+for(let i=0;i<18;i++){
+si[i] = siRow[i] || si[i];
+}
+}
+
+/* REFRESH TABLE */
+renderScorecard();
+
+alert("Scan complete — check values");
+}/* SPLIT INTO LINES */
 let lines = text.split("\n").map(l=>l.trim()).filter(l=>l);
 
 /* EXTRACT NUMBERS PER LINE */
